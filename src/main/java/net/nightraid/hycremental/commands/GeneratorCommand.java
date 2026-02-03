@@ -1,18 +1,24 @@
 package net.nightraid.hycremental.commands;
 
-import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;
+import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
-import com.hypixel.hytale.server.entity.player.HytaleServerPlayer;
+import com.hypixel.hytale.server.core.command.system.ParseResult;
 
-public class GeneratorCommand extends AbstractPlayerCommand {
+public class GeneratorCommand extends AbstractCommand {
     
     public GeneratorCommand() {
-        super("generator", "Manages resource generators");
+        super("generator");
     }
     
     @Override
-    protected void execute(CommandContext context, HytaleServerPlayer player) {
+    public void execute(CommandContext context, ParseResult parseResult) {
         // TODO: Implement generator logic
+        // Access player via context.getSender() and cast to appropriate type
         context.sendMessage("Generator command executed!");
+    }
+    
+    @Override
+    public String getDescription() {
+        return "Manages resource generators";
     }
 }
