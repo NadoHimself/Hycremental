@@ -1,12 +1,11 @@
 package de.ageofflair.hycremental;
 
-// TODO: Replace with actual Hytale API imports when available
-// import com.hytale.plugin.JavaPlugin;
-// import com.hytale.plugin.logger.PluginLogger;
-
-import de.ageofflair.hycremental.core.*;
-import de.ageofflair.hycremental.utils.ConfigManager;
-import de.ageofflair.hycremental.utils.NumberFormatter;
+import de.ageofflair.hycremental.data.DatabaseManager;
+import de.ageofflair.hycremental.data.PlayerDataManager;
+import de.ageofflair.hycremental.core.GeneratorManager;
+import de.ageofflair.hycremental.core.IslandManager;
+import de.ageofflair.hycremental.core.EconomyManager;
+import de.ageofflair.hycremental.core.PrestigeManager;
 
 import java.util.logging.Logger;
 
@@ -15,15 +14,14 @@ import java.util.logging.Logger;
  * 
  * @author Kielian (NadoHimself)
  * @version 1.0.0-ALPHA
- * @company Age of Flair
+ * @since 2026-02-03
  */
-public class Hycremental /* extends JavaPlugin */ {
+public class Hycremental {
     
     private static Hycremental instance;
     private Logger logger;
     
     // Core Managers
-    private ConfigManager configManager;
     private DatabaseManager databaseManager;
     private PlayerDataManager playerDataManager;
     private GeneratorManager generatorManager;
@@ -31,129 +29,112 @@ public class Hycremental /* extends JavaPlugin */ {
     private EconomyManager economyManager;
     private PrestigeManager prestigeManager;
     
-    // Utility
-    private NumberFormatter numberFormatter;
+    // Plugin State
+    private boolean enabled = false;
     
     /**
-     * Plugin Setup Phase
-     * Called when plugin is being initialized
+     * Setup phase - Called before the plugin starts
+     * Initialize all managers and load configurations
      */
-    // @Override
     public void setup() {
         instance = this;
         logger = Logger.getLogger("Hycremental");
         
-        logger.info("=========================================");
-        logger.info("   Hycremental v1.0.0-ALPHA");
-        logger.info("   by Kielian - Age of Flair");
-        logger.info("=========================================");
-        logger.info("Initializing Hycremental...");
+        logger.info("═══════════════════════════════════════════");
+        logger.info("  Hycremental v1.0.0-ALPHA");
+        logger.info("  Initializing...");
+        logger.info("═══════════════════════════════════════════");
         
         try {
             // Load Configuration
-            configManager = new ConfigManager(this);
-            configManager.loadConfigs();
-            logger.info("✓ Configuration loaded");
-            
-            // Initialize Utility Classes
-            numberFormatter = new NumberFormatter();
-            logger.info("✓ Utilities initialized");
+            logger.info("Loading configuration files...");
+            // TODO: ConfigManager.loadConfigs();
             
             // Initialize Database
-            databaseManager = new DatabaseManager(this);
-            databaseManager.connect();
-            databaseManager.createTables();
-            logger.info("✓ Database connected");
+            logger.info("Connecting to database...");
+            this.databaseManager = new DatabaseManager();
+            this.databaseManager.connect();
             
-            // Initialize Core Managers
-            playerDataManager = new PlayerDataManager(this);
-            generatorManager = new GeneratorManager(this);
-            islandManager = new IslandManager(this);
-            economyManager = new EconomyManager(this);
-            prestigeManager = new PrestigeManager(this);
-            logger.info("✓ Core managers initialized");
+            // Initialize Managers
+            logger.info("Initializing managers...");
+            this.playerDataManager = new PlayerDataManager(databaseManager);
+            // TODO: Initialize other managers when they're created
             
-            logger.info("Hycremental initialized successfully!");
+            logger.info("Hycremental setup completed successfully!");
             
         } catch (Exception e) {
-            logger.severe("Failed to initialize Hycremental!");
-            logger.severe("Error: " + e.getMessage());
+            logger.severe("Failed to setup Hycremental: " + e.getMessage());
             e.printStackTrace();
         }
     }
     
     /**
-     * Plugin Start Phase
-     * Called when plugin is starting and ready to register commands/events
+     * Start phase - Called when the plugin is ready to start
+     * Register events, commands, and start background tasks
      */
-    // @Override
     public void start() {
-        logger.info("Starting Hycremental...");
+        logger.info("═══════════════════════════════════════════");
+        logger.info("  Starting Hycremental...");
+        logger.info("═══════════════════════════════════════════");
         
         try {
-            // Register Commands
-            registerCommands();
-            logger.info("✓ Commands registered");
-            
             // Register Event Listeners
-            registerEvents();
-            logger.info("✓ Event listeners registered");
+            logger.info("Registering event listeners...");
+            // TODO: Register events
             
-            // Start Async Tasks
-            startAsyncTasks();
-            logger.info("✓ Async tasks started");
+            // Register Commands
+            logger.info("Registering commands...");
+            // TODO: Register commands
             
-            // Load Active Islands
-            islandManager.loadActiveIslands();
-            logger.info("✓ Active islands loaded");
+            // Start Background Tasks
+            logger.info("Starting background tasks...");
+            // TODO: Start generator tick system
+            // TODO: Start auto-save system
             
-            logger.info("=========================================");
-            logger.info("   Hycremental started successfully!");
-            logger.info("=========================================");
+            this.enabled = true;
+            
+            logger.info("═══════════════════════════════════════════");
+            logger.info("  Hycremental successfully started!");
+            logger.info("  Ready for players to build their empires!");
+            logger.info("═══════════════════════════════════════════");
             
         } catch (Exception e) {
-            logger.severe("Failed to start Hycremental!");
-            logger.severe("Error: " + e.getMessage());
+            logger.severe("Failed to start Hycremental: " + e.getMessage());
             e.printStackTrace();
         }
     }
     
     /**
-     * Plugin Shutdown Phase
-     * Called when plugin is shutting down
+     * Shutdown phase - Called when the plugin is shutting down
+     * Save all data and close connections
      */
-    // @Override
     public void shutdown() {
-        logger.info("Shutting down Hycremental...");
+        logger.info("═══════════════════════════════════════════");
+        logger.info("  Shutting down Hycremental...");
+        logger.info("═══════════════════════════════════════════");
         
         try {
-            // Save all player data
+            this.enabled = false;
+            
+            // Stop Background Tasks
+            logger.info("Stopping background tasks...");
+            // TODO: Stop scheduled tasks
+            
+            // Save All Player Data
+            logger.info("Saving all player data...");
             if (playerDataManager != null) {
                 playerDataManager.saveAllPlayers();
-                logger.info("✓ Player data saved");
             }
             
-            // Stop generator ticks
-            if (generatorManager != null) {
-                generatorManager.stopTicking();
-                logger.info("✓ Generator ticks stopped");
-            }
-            
-            // Unload islands
-            if (islandManager != null) {
-                islandManager.unloadAllIslands();
-                logger.info("✓ Islands unloaded");
-            }
-            
-            // Close database connection
+            // Close Database Connection
+            logger.info("Closing database connection...");
             if (databaseManager != null) {
                 databaseManager.disconnect();
-                logger.info("✓ Database disconnected");
             }
             
-            logger.info("=========================================");
-            logger.info("   Hycremental shut down successfully!");
-            logger.info("=========================================");
+            logger.info("═══════════════════════════════════════════");
+            logger.info("  Hycremental shut down successfully!");
+            logger.info("═══════════════════════════════════════════");
             
         } catch (Exception e) {
             logger.severe("Error during shutdown: " + e.getMessage());
@@ -162,69 +143,30 @@ public class Hycremental /* extends JavaPlugin */ {
     }
     
     /**
-     * Register all commands
+     * Get the plugin instance
+     * @return Plugin instance
      */
-    private void registerCommands() {
-        // TODO: Implement command registration
-        // registerCommand("essence", new EssenceCommand(this));
-        // registerCommand("generator", new GeneratorCommand(this));
-        // registerCommand("island", new IslandCommand(this));
-        // registerCommand("prestige", new PrestigeCommand(this));
-        // registerCommand("shop", new ShopCommand(this));
-        // registerCommand("stats", new StatsCommand(this));
-        // registerCommand("hyadmin", new AdminCommand(this));
-    }
-    
-    /**
-     * Register all event listeners
-     */
-    private void registerEvents() {
-        // TODO: Implement event registration
-        // registerListener(new BlockBreakListener(this));
-        // registerListener(new PlayerJoinListener(this));
-        // registerListener(new PlayerQuitListener(this));
-        // registerListener(new GeneratorPlaceListener(this));
-    }
-    
-    /**
-     * Start async background tasks
-     */
-    private void startAsyncTasks() {
-        // Generator Tick Task (every 1 second)
-        // scheduleAsyncRepeatingTask(() -> {
-        //     if (generatorManager != null) {
-        //         generatorManager.tickAllGenerators();
-        //     }
-        // }, 0L, 20L); // 20 ticks = 1 second
-        
-        // Auto-Save Task (every 5 minutes)
-        // scheduleAsyncRepeatingTask(() -> {
-        //     if (playerDataManager != null) {
-        //         playerDataManager.saveAllPlayers();
-        //         logger.info("[Auto-Save] All player data saved.");
-        //     }
-        // }, 6000L, 6000L); // 6000 ticks = 5 minutes
-        
-        // Leaderboard Update Task (every 1 hour)
-        // scheduleAsyncRepeatingTask(() -> {
-        //     // TODO: Update leaderboards
-        //     logger.info("[Leaderboard] Updated all leaderboards.");
-        // }, 72000L, 72000L); // 72000 ticks = 1 hour
-    }
-    
-    // Getters
-    
     public static Hycremental getInstance() {
         return instance;
     }
     
-    public Logger getPluginLogger() {
+    /**
+     * Get the logger
+     * @return Logger instance
+     */
+    public Logger getLogger() {
         return logger;
     }
     
-    public ConfigManager getConfigManager() {
-        return configManager;
+    /**
+     * Check if plugin is enabled
+     * @return true if enabled
+     */
+    public boolean isEnabled() {
+        return enabled;
     }
+    
+    // Getter methods for managers
     
     public DatabaseManager getDatabaseManager() {
         return databaseManager;
@@ -248,9 +190,5 @@ public class Hycremental /* extends JavaPlugin */ {
     
     public PrestigeManager getPrestigeManager() {
         return prestigeManager;
-    }
-    
-    public NumberFormatter getNumberFormatter() {
-        return numberFormatter;
     }
 }
