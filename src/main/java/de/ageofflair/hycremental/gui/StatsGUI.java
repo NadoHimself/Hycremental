@@ -1,15 +1,27 @@
 package de.ageofflair.hycremental.gui;
 
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+
 import de.ageofflair.hycremental.Hycremental;
 import de.ageofflair.hycremental.data.PlayerData;
+import de.ageofflair.hycremental.generators.Generator;
 import de.ageofflair.hycremental.utils.NumberFormatter;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.UUID;
 
 /**
- * Stats GUI - Display player statistics and progression
+ * Stats GUI - Player Statistics Display
+ * 
+ * Uses Hytale's PageManager system for custom UI
+ * 
+ * TODO: Create UI file at Common/UI/Custom/stats_gui.ui
+ * - Tabbed interface (Overview, Generators, Economy, Progression)
+ * - Charts/graphs for progress visualization
+ * - Leaderboard comparisons
+ * - Achievement display
  * 
  * @author Kielian (NadoHimself)
  * @version 1.0.0-ALPHA
@@ -17,7 +29,8 @@ import java.util.concurrent.TimeUnit;
 public class StatsGUI {
     
     private final Hycremental plugin;
-    private static final int GUI_SIZE = 54; // 6 rows
+    
+    private static final String STATS_PAGE_ID = "hycremental:stats";
     
     public StatsGUI(Hycremental plugin) {
         this.plugin = plugin;
@@ -25,319 +38,129 @@ public class StatsGUI {
     
     /**
      * Open stats GUI for player
-     * @param player Player to open GUI for
      */
-    public void openStats(Object player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(getPlayerUUID(player));
+    public void openStatsGUI(Player player) {
+        UUID uuid = player.getComponent(PlayerRef.class).getUuid();
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(uuid);
+        
         if (playerData == null) {
-            sendMessage(player, "§cError loading player data!");
+            player.sendMessage(Message.raw("§cError loading player data!"));
             return;
         }
         
-        // Create GUI
-        // TODO: GUI inventory = createInventory("§6§l" + playerData.getUsername() + "'s Stats", GUI_SIZE);
+        // TODO: Implement with Hytale PageManager API
+        // 
+        // Open custom stats page with tabs:
+        // Map<String, Object> data = new HashMap<>();
+        // 
+        // Overview Tab:
+        // data.put("essence", playerData.getEssence().toPlainString());
+        // data.put("gems", playerData.getGems());
+        // data.put("crystals", playerData.getCrystals());
+        // data.put("prestige", playerData.getPrestigeLevel());
+        // data.put("ascension", playerData.getAscensionLevel());
+        // data.put("rebirth", playerData.getRebirthCount());
+        // 
+        // Generators Tab:
+        // data.put("generator_count", plugin.getGeneratorManager().getPlayerGeneratorCount(uuid));
+        // data.put("total_production", calculateTotalProduction(playerData));
+        // data.put("generators_purchased", playerData.getGeneratorsPurchased());
+        // 
+        // Economy Tab:
+        // data.put("lifetime_essence", playerData.getLifetimeEssence().toPlainString());
+        // data.put("rank", plugin.getEconomyManager().getPlayerRank(uuid));
+        // 
+        // Progression Tab:
+        // data.put("blocks_mined", playerData.getBlocksMined());
+        // data.put("play_time", calculatePlayTime(playerData));
+        // data.put("multiplier", playerData.calculateTotalMultiplier());
+        // 
+        // player.getPageManager().openCustomPage(PageId.of(STATS_PAGE_ID), data);
         
-        // Currency Stats
-        addCurrencyStats(null, 11, playerData);
+        // Temporary fallback: Send text-based stats
+        sendTextBasedStats(player, playerData);
+    }
+    
+    /**
+     * Calculate total production from all generators
+     */
+    private double calculateTotalProduction(PlayerData playerData) {
+        List<Generator> generators = plugin.getGeneratorManager().getPlayerGenerators(playerData.getUuid());
+        double total = 0;
         
-        // Progression Stats
-        addProgressionStats(null, 13, playerData);
+        for (Generator gen : generators) {
+            total += gen.calculateProduction();
+        }
         
-        // Generator Stats
-        addGeneratorStats(null, 15, playerData);
+        return total * playerData.calculateTotalMultiplier();
+    }
+    
+    /**
+     * Calculate play time
+     */
+    private String calculatePlayTime(PlayerData playerData) {
+        long playTimeMs = System.currentTimeMillis() - playerData.getFirstJoin();
+        long days = playTimeMs / 86400000;
+        long hours = (playTimeMs % 86400000) / 3600000;
+        long minutes = (playTimeMs % 3600000) / 60000;
         
-        // Mining Stats
-        addMiningStats(null, 20, playerData);
+        return days + "d " + hours + "h " + minutes + "m";
+    }
+    
+    /**
+     * Temporary text-based stats display
+     */
+    private void sendTextBasedStats(Player player, PlayerData playerData) {
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§6§l─────────────────────────────"));
+        player.sendMessage(Message.raw("§6§l    Your Statistics"));
+        player.sendMessage(Message.raw(""));
         
         // Economy Stats
-        addEconomyStats(null, 22, playerData);
+        player.sendMessage(Message.raw("§e§l» Economy:"));
+        player.sendMessage(Message.raw("§8 • §7Essence: §a" + NumberFormatter.format(playerData.getEssence())));
+        player.sendMessage(Message.raw("§8 • §7Gems: §b" + NumberFormatter.formatLong(playerData.getGems())));
+        player.sendMessage(Message.raw("§8 • §7Crystals: §d" + playerData.getCrystals()));
+        player.sendMessage(Message.raw("§8 • §7Lifetime Earned: §e" + NumberFormatter.format(playerData.getLifetimeEssence())));
+        player.sendMessage(Message.raw("§8 • §7Leaderboard Rank: §6#" + plugin.getEconomyManager().getPlayerRank(playerData.getUuid())));
+        player.sendMessage(Message.raw(""));
         
-        // Time Stats
-        addTimeStats(null, 24, playerData);
+        // Progression Stats
+        player.sendMessage(Message.raw("§e§l» Progression:"));
+        player.sendMessage(Message.raw("§8 • §7Prestige: §6" + playerData.getPrestigeLevel()));
+        player.sendMessage(Message.raw("§8 • §7Ascension: §5" + playerData.getAscensionLevel()));
+        player.sendMessage(Message.raw("§8 • §7Rebirth: §c" + playerData.getRebirthCount()));
+        player.sendMessage(Message.raw("§8 • §7Total Multiplier: §e" + String.format("%.2fx", playerData.calculateTotalMultiplier())));
+        player.sendMessage(Message.raw(""));
         
-        // Multiplier Breakdown
-        addMultiplierBreakdown(null, 31, playerData);
+        // Generator Stats
+        int generatorCount = plugin.getGeneratorManager().getPlayerGeneratorCount(playerData.getUuid());
+        double totalProduction = calculateTotalProduction(playerData);
         
-        // Leaderboard Position
-        addLeaderboardPosition(null, 40, playerData);
+        player.sendMessage(Message.raw("§e§l» Generators:"));
+        player.sendMessage(Message.raw("§8 • §7Active: §e" + generatorCount + "§7/§e" + playerData.getGeneratorSlots()));
+        player.sendMessage(Message.raw("§8 • §7Total Production: §a" + NumberFormatter.format(totalProduction) + " Essence/s"));
+        player.sendMessage(Message.raw("§8 • §7Lifetime Purchased: §e" + playerData.getGeneratorsPurchased()));
+        player.sendMessage(Message.raw(""));
         
-        // Close button
-        addCloseButton(null, 49);
-        
-        // TODO: player.openInventory(inventory);
-    }
-    
-    /**
-     * Add currency statistics
-     */
-    private void addCurrencyStats(Object inventory, int slot, PlayerData playerData) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.add("§7Balance: §a" + NumberFormatter.format(playerData.getEssence()) + " Essence");
-        lore.add("§7Gems: §b" + NumberFormatter.formatLong(playerData.getGems()));
-        lore.add("§7Crystals: §d" + playerData.getCrystals());
-        lore.add("");
-        lore.add("§7Lifetime Essence: §e" + NumberFormatter.format(playerData.getLifetimeEssence()));
-        lore.add("");
-        
-        // TODO: Create item (gold ingot or emerald)
-        // meta.setDisplayName("§a§lCurrency");
-    }
-    
-    /**
-     * Add progression statistics
-     */
-    private void addProgressionStats(Object inventory, int slot, PlayerData playerData) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.add("§7Prestige Level: §6" + playerData.getPrestigeLevel());
-        lore.add("§7Total Prestiges: §6" + playerData.getPrestigeCount());
-        lore.add("");
-        lore.add("§7Ascension Level: §5" + playerData.getAscensionLevel());
-        lore.add("§7Rebirth Count: §c" + playerData.getRebirthCount());
-        lore.add("");
-        lore.add("§7Island Size: §e" + playerData.getIslandSize() + "x" + playerData.getIslandSize() + " chunks");
-        lore.add("§7Generator Slots: §e" + playerData.getGeneratorSlots());
-        lore.add("");
-        
-        // TODO: Create item (nether star)
-        // meta.setDisplayName("§5§lProgression");
-    }
-    
-    /**
-     * Add generator statistics
-     */
-    private void addGeneratorStats(Object inventory, int slot, PlayerData playerData) {
-        List<String> lore = new ArrayList<>();
-        
-        // Get generator stats from manager
-        int activeGenerators = 0; // TODO: Get from GeneratorManager
-        double totalProduction = 0; // TODO: Calculate total production
-        
-        lore.add("");
-        lore.add("§7Active Generators: §e" + activeGenerators);
-        lore.add("§7Total Production: §a" + NumberFormatter.format(totalProduction) + " Essence/s");
-        lore.add("");
-        lore.add("§7Generators Purchased: §e" + playerData.getGeneratorsPurchased());
-        lore.add("");
-        
-        // Calculate estimated income
+        // Estimated Income
         long hourlyIncome = (long)(totalProduction * 3600);
         long dailyIncome = hourlyIncome * 24;
         
-        lore.add("§7Estimated Income:");
-        lore.add("§8 • §7Per Hour: §a" + NumberFormatter.formatLong(hourlyIncome));
-        lore.add("§8 • §7Per Day: §a" + NumberFormatter.formatLong(dailyIncome));
-        lore.add("");
+        player.sendMessage(Message.raw("§e§l» Estimated Income:"));
+        player.sendMessage(Message.raw("§8 • §7Per Minute: §a" + NumberFormatter.formatLong((long)(totalProduction * 60))));
+        player.sendMessage(Message.raw("§8 • §7Per Hour: §a" + NumberFormatter.formatLong(hourlyIncome)));
+        player.sendMessage(Message.raw("§8 • §7Per Day: §a" + NumberFormatter.formatLong(dailyIncome)));
+        player.sendMessage(Message.raw(""));
         
-        // TODO: Create item (hopper or dispenser)
-        // meta.setDisplayName("§e§lGenerators");
-    }
-    
-    /**
-     * Add mining statistics
-     */
-    private void addMiningStats(Object inventory, int slot, PlayerData playerData) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.add("§7Total Blocks Mined: §e" + NumberFormatter.formatLong(playerData.getTotalBlocksMined()));
-        lore.add("");
+        // Activity Stats
+        player.sendMessage(Message.raw("§e§l» Activity:"));
+        player.sendMessage(Message.raw("§8 • §7Blocks Mined: §e" + NumberFormatter.formatLong(playerData.getBlocksMined())));
+        player.sendMessage(Message.raw("§8 • §7Play Time: §e" + calculatePlayTime(playerData)));
+        player.sendMessage(Message.raw("§8 • §7Island Size: §e" + playerData.getIslandSize() + "x" + playerData.getIslandSize()));
+        player.sendMessage(Message.raw(""));
         
-        // Calculate averages
-        long timePlayed = System.currentTimeMillis() - playerData.getFirstJoin();
-        long hoursPlayed = TimeUnit.MILLISECONDS.toHours(timePlayed);
-        if (hoursPlayed > 0) {
-            long blocksPerHour = playerData.getTotalBlocksMined() / hoursPlayed;
-            lore.add("§7Blocks per Hour: §e" + NumberFormatter.formatLong(blocksPerHour));
-        }
-        lore.add("");
-        
-        // TODO: Create item (diamond pickaxe)
-        // meta.setDisplayName("§b§lMining");
-    }
-    
-    /**
-     * Add economy statistics
-     */
-    private void addEconomyStats(Object inventory, int slot, PlayerData playerData) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.add("§7Total Essence Earned: §a" + NumberFormatter.format(playerData.getLifetimeEssence()));
-        lore.add("");
-        
-        // TODO: Get transaction stats from database
-        int totalTransactions = 0;
-        int totalPurchases = 0;
-        int totalSales = 0;
-        
-        lore.add("§7Marketplace:");
-        lore.add("§8 • §7Transactions: §e" + totalTransactions);
-        lore.add("§8 • §7Purchases: §e" + totalPurchases);
-        lore.add("§8 • §7Sales: §e" + totalSales);
-        lore.add("");
-        
-        // TODO: Create item (chest or gold block)
-        // meta.setDisplayName("§6§lEconomy");
-    }
-    
-    /**
-     * Add time statistics
-     */
-    private void addTimeStats(Object inventory, int slot, PlayerData playerData) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        
-        // First join
-        long firstJoin = playerData.getFirstJoin();
-        String firstJoinDate = formatDate(firstJoin);
-        lore.add("§7First Joined: §e" + firstJoinDate);
-        
-        // Last login
-        long lastLogin = playerData.getLastLogin();
-        String lastLoginDate = formatDate(lastLogin);
-        lore.add("§7Last Login: §e" + lastLoginDate);
-        
-        lore.add("");
-        
-        // Time played
-        long timePlayed = System.currentTimeMillis() - firstJoin;
-        String timePlayedStr = formatDuration(timePlayed);
-        lore.add("§7Total Playtime: §e" + timePlayedStr);
-        lore.add("");
-        
-        // TODO: Create item (clock)
-        // meta.setDisplayName("§7§lTime Stats");
-    }
-    
-    /**
-     * Add multiplier breakdown
-     */
-    private void addMultiplierBreakdown(Object inventory, int slot, PlayerData playerData) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.add("§7Total Multiplier: §e" + String.format("%.2f", playerData.calculateTotalMultiplier()) + "x");
-        lore.add("");
-        lore.add("§7Breakdown:");
-        
-        // Base
-        lore.add("§8 • §7Base: §f1.00x");
-        
-        // Prestige
-        double prestigeBonus = playerData.getPrestigeLevel() * 0.10;
-        if (prestigeBonus > 0) {
-            lore.add("§8 • §7Prestige: §6+" + String.format("%.2f", prestigeBonus) + "x");
-        }
-        
-        // Ascension
-        double ascensionBonus = playerData.getAscensionLevel() * 0.50;
-        if (ascensionBonus > 0) {
-            lore.add("§8 • §7Ascension: §5+" + String.format("%.2f", ascensionBonus) + "x");
-        }
-        
-        // Rebirth
-        if (playerData.getRebirthCount() > 0) {
-            double rebirthMulti = Math.pow(2, playerData.getRebirthCount());
-            lore.add("§8 • §7Rebirth: §c" + String.format("%.2f", rebirthMulti) + "x");
-        }
-        
-        lore.add("");
-        
-        // TODO: Create item (enchanted book)
-        // meta.setDisplayName("§d§lMultipliers");
-    }
-    
-    /**
-     * Add leaderboard position
-     */
-    private void addLeaderboardPosition(Object inventory, int slot, PlayerData playerData) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        
-        // TODO: Get leaderboard positions from database
-        int essenceRank = 0;
-        int prestigeRank = 0;
-        int generatorRank = 0;
-        
-        lore.add("§7Your Rankings:");
-        lore.add("");
-        lore.add("§8 • §7Top Essence: §e#" + essenceRank);
-        lore.add("§8 • §7Top Prestige: §6#" + prestigeRank);
-        lore.add("§8 • §7Top Producer: §a#" + generatorRank);
-        lore.add("");
-        lore.add("§e§l» Click to view leaderboards «");
-        lore.add("");
-        
-        // TODO: Create item (podium or trophy)
-        // meta.setDisplayName("§6§lLeaderboards");
-    }
-    
-    /**
-     * Add close button
-     */
-    private void addCloseButton(Object inventory, int slot) {
-        // TODO: Create close button
-    }
-    
-    /**
-     * Handle stats GUI click
-     */
-    public void handleClick(Object player, int slot) {
-        switch (slot) {
-            case 40: // Leaderboard
-                openLeaderboards(player);
-                break;
-            case 49: // Close
-                closeGUI(player);
-                break;
-        }
-    }
-    
-    /**
-     * Open leaderboards GUI
-     */
-    private void openLeaderboards(Object player) {
-        // TODO: Open leaderboards menu
-        sendMessage(player, "§7Leaderboards coming soon!");
-    }
-    
-    /**
-     * Format timestamp to readable date
-     */
-    private String formatDate(long timestamp) {
-        // TODO: Use proper date formatting
-        long days = TimeUnit.MILLISECONDS.toDays(System.currentTimeMillis() - timestamp);
-        if (days == 0) return "Today";
-        if (days == 1) return "Yesterday";
-        return days + " days ago";
-    }
-    
-    /**
-     * Format duration to readable string
-     */
-    private String formatDuration(long millis) {
-        long days = TimeUnit.MILLISECONDS.toDays(millis);
-        long hours = TimeUnit.MILLISECONDS.toHours(millis) % 24;
-        long minutes = TimeUnit.MILLISECONDS.toMinutes(millis) % 60;
-        
-        StringBuilder sb = new StringBuilder();
-        if (days > 0) sb.append(days).append("d ");
-        if (hours > 0) sb.append(hours).append("h ");
-        if (minutes > 0) sb.append(minutes).append("m");
-        
-        return sb.length() > 0 ? sb.toString().trim() : "< 1m";
-    }
-    
-    // Utility methods
-    
-    private Object getPlayerUUID(Object player) {
-        return null; // TODO
-    }
-    
-    private void sendMessage(Object player, String message) {
-        plugin.getLogger().info("[GUI] " + message);
-    }
-    
-    private void closeGUI(Object player) {
-        // TODO: player.closeInventory();
+        player.sendMessage(Message.raw("§6§l─────────────────────────────"));
+        player.sendMessage(Message.raw(""));
     }
 }
