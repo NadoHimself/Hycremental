@@ -10,9 +10,9 @@ public class ShopCommand extends CommandBase {
     }
     
     @Override
-    protected void run(CommandContext context) throws Exception {
+    protected void executeSync(CommandContext context) {
         // TODO: Implement shop GUI logic
-        // Get player: context.getSender()
+        // Get player via context.getSender()
         context.sendMessage("Shop command executed!");
     }
 }

@@ -10,7 +10,7 @@ public class IslandCommand extends CommandBase {
     }
     
     @Override
-    protected void run(CommandContext context) throws Exception {
+    protected void executeSync(CommandContext context) {
         // TODO: Implement island management logic
         context.sendMessage("Island command executed!");
     }

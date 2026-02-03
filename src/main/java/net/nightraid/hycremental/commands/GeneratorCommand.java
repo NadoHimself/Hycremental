@@ -10,7 +10,7 @@ public class GeneratorCommand extends CommandBase {
     }
     
     @Override
-    protected void run(CommandContext context) throws Exception {
+    protected void executeSync(CommandContext context) {
         // TODO: Implement generator logic
         context.sendMessage("Generator command executed!");
     }

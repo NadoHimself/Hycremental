@@ -10,7 +10,7 @@ public class EssenceCommand extends CommandBase {
     }
     
     @Override
-    protected void run(CommandContext context) throws Exception {
+    protected void executeSync(CommandContext context) {
         // TODO: Implement essence management logic
         context.sendMessage("Essence command executed!");
     }

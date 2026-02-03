@@ -10,7 +10,7 @@ public class PrestigeCommand extends CommandBase {
     }
     
     @Override
-    protected void run(CommandContext context) throws Exception {
+    protected void executeSync(CommandContext context) {
         // TODO: Implement prestige system logic
         context.sendMessage("Prestige command executed!");
     }
