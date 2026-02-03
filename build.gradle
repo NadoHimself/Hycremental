@@ -8,14 +8,11 @@ version = '1.0.0-ALPHA'
 
 repositories {
     mavenCentral()
-    
-    // Hytale API Repository (placeholder - replace when available)
-    // maven { url 'https://repo.hytale.com/releases' }
 }
 
 dependencies {
-    // Hytale Plugin API (placeholder - replace when available)
-    // compileOnly 'com.hytale:plugin-api:1.0.0'
+    // Hytale Server JAR (local file)
+    compileOnly files('libs/HytaleServer.jar')
     
     // Database Connection Pool
     implementation 'com.zaxxer:HikariCP:5.1.0'
