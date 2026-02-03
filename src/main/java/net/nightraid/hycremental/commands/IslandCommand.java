@@ -1,24 +1,17 @@
 package net.nightraid.hycremental.commands;
 
-import com.hypixel.hytale.server.core.command.system.AbstractCommand;
+import com.hypixel.hytale.server.core.command.system.basecommands.CommandBase;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
-import com.hypixel.hytale.server.core.command.system.ParseResult;
 
-public class IslandCommand extends AbstractCommand {
+public class IslandCommand extends CommandBase {
     
     public IslandCommand() {
-        super("island");
+        super("island", "Manages your island");
     }
     
     @Override
-    public void execute(CommandContext context, ParseResult parseResult) {
+    protected void run(CommandContext context) throws Exception {
         // TODO: Implement island management logic
-        // Access player via context.getSender() and cast to appropriate type
         context.sendMessage("Island command executed!");
-    }
-    
-    @Override
-    public String getDescription() {
-        return "Manages your island";
     }
 }

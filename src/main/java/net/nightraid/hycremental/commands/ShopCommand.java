@@ -1,24 +1,18 @@
 package net.nightraid.hycremental.commands;
 
-import com.hypixel.hytale.server.core.command.system.AbstractCommand;
+import com.hypixel.hytale.server.core.command.system.basecommands.CommandBase;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
-import com.hypixel.hytale.server.core.command.system.ParseResult;
 
-public class ShopCommand extends AbstractCommand {
+public class ShopCommand extends CommandBase {
     
     public ShopCommand() {
-        super("shop");
+        super("shop", "Opens the shop GUI");
     }
     
     @Override
-    public void execute(CommandContext context, ParseResult parseResult) {
+    protected void run(CommandContext context) throws Exception {
         // TODO: Implement shop GUI logic
-        // Access player via context.getSender() and cast to appropriate type
+        // Get player: context.getSender()
         context.sendMessage("Shop command executed!");
-    }
-    
-    @Override
-    public String getDescription() {
-        return "Opens the shop GUI";
     }
 }
