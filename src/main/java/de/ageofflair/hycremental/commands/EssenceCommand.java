@@ -1,43 +1,47 @@
 package de.ageofflair.hycremental.commands;
 
-import com.hypixel.hytale.server.command.Command;
-import com.hypixel.hytale.server.command.CommandContext;
-import com.hypixel.hytale.server.command.CommandSender;
-import com.hypixel.hytale.server.player.ServerPlayer;
+import com.hypixel.hytale.server.core.command.Command;
+import com.hypixel.hytale.server.core.command.CommandSender;
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.Message;
 import de.ageofflair.hycremental.Hycremental;
 import de.ageofflair.hycremental.data.PlayerData;
 
 /**
  * Essence Command - Check and manage essence
  */
-public class EssenceCommand extends Command {
+public class EssenceCommand implements Command {
     
     private final Hycremental plugin;
     
     public EssenceCommand(Hycremental plugin) {
-        super("essence");
         this.plugin = plugin;
     }
     
     @Override
-    public void execute(CommandSender sender, CommandContext context) {
-        if (!(sender instanceof ServerPlayer)) {
-            sender.sendMessage("§cThis command can only be used by players!");
+    public String getName() {
+        return "essence";
+    }
+    
+    @Override
+    public void execute(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(Message.raw("§cThis command can only be used by players!"));
             return;
         }
         
-        ServerPlayer player = (ServerPlayer) sender;
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUUID());
+        Player player = (Player) sender;
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUuid());
         
         if (playerData == null) {
-            player.sendMessage("§cPlayer data not found!");
+            player.sendMessage(Message.raw("§cPlayer data not found!"));
             return;
         }
         
-        player.sendMessage("§6§l=== Your Economy ===");
-        player.sendMessage("§7Essence: §e" + playerData.getEssence().toPlainString());
-        player.sendMessage("§7Gems: §b" + playerData.getGems());
-        player.sendMessage("§7Crystals: §d" + playerData.getCrystals());
-        player.sendMessage("§7Lifetime Essence: §6" + playerData.getLifetimeEssence().toPlainString());
+        player.sendMessage(Message.raw("§6§l=== Your Economy ==="));
+        player.sendMessage(Message.raw("§7Essence: §e" + playerData.getEssence().toPlainString()));
+        player.sendMessage(Message.raw("§7Gems: §b" + playerData.getGems()));
+        player.sendMessage(Message.raw("§7Crystals: §d" + playerData.getCrystals()));
+        player.sendMessage(Message.raw("§7Lifetime Essence: §6" + playerData.getLifetimeEssence().toPlainString()));
     }
 }
