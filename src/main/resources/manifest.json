@@ -1,0 +1,83 @@
+{
+  "id": "hycremental",
+  "name": "Hycremental",
+  "version": "1.0.0-ALPHA",
+  "description": "Das ultimative Incremental Generator Tycoon Gamemode für Hytale",
+  "authors": [
+    "Kielian (NadoHimself)",
+    "Age of Flair"
+  ],
+  "website": "https://ageofflair.de",
+  "source": "https://github.com/NadoHimself/Hycremental",
+  "main": "de.ageofflair.hycremental.Hycremental",
+  "api-version": "1.0",
+  "load": "STARTUP",
+  "dependencies": [],
+  "permissions": {
+    "hycremental.admin": {
+      "description": "Full admin access to all Hycremental commands",
+      "default": "op"
+    },
+    "hycremental.user": {
+      "description": "Basic player permissions",
+      "default": true
+    },
+    "hycremental.vip.bronze": {
+      "description": "Bronze VIP tier perks",
+      "default": false
+    },
+    "hycremental.vip.silver": {
+      "description": "Silver VIP tier perks",
+      "default": false
+    },
+    "hycremental.vip.gold": {
+      "description": "Gold VIP tier perks",
+      "default": false
+    },
+    "hycremental.vip.platinum": {
+      "description": "Platinum VIP tier perks",
+      "default": false
+    }
+  },
+  "commands": {
+    "essence": {
+      "description": "Essence management commands",
+      "aliases": ["ess", "e"],
+      "permission": "hycremental.user",
+      "usage": "/essence [balance|stats|pay <player> <amount>]"
+    },
+    "generator": {
+      "description": "Generator management commands",
+      "aliases": ["gen", "g"],
+      "permission": "hycremental.user",
+      "usage": "/generator [buy|place|upgrade|info]"
+    },
+    "island": {
+      "description": "Island management commands",
+      "aliases": ["is"],
+      "permission": "hycremental.user",
+      "usage": "/island [create|home|invite|kick|expand]"
+    },
+    "prestige": {
+      "description": "Prestige system commands",
+      "aliases": ["p"],
+      "permission": "hycremental.user",
+      "usage": "/prestige [confirm]"
+    },
+    "shop": {
+      "description": "Open the generator shop",
+      "permission": "hycremental.user",
+      "usage": "/shop [category]"
+    },
+    "stats": {
+      "description": "View your statistics",
+      "permission": "hycremental.user",
+      "usage": "/stats [player]"
+    },
+    "hyadmin": {
+      "description": "Admin commands for Hycremental",
+      "permission": "hycremental.admin",
+      "usage": "/hyadmin [give|set|reset|reload|backup]"
+    }
+  }
+}

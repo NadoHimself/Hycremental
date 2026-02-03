@@ -1,0 +1,153 @@
+# Hycremental Configuration
+# Plugin Version: 1.0.0-ALPHA
+
+# Database Configuration
+database:
+  type: postgresql  # postgresql or mysql
+  host: localhost
+  port: 5432
+  database: hycremental
+  username: hycremental_user
+  password: change_me_please
+  
+  # Connection Pool Settings
+  pool:
+    maximum-pool-size: 10
+    minimum-idle: 2
+    connection-timeout: 30000
+    idle-timeout: 600000
+    max-lifetime: 1800000
+
+# Island Settings
+island:
+  default-size: 20  # Default island size in chunks (20x20)
+  max-size: 100     # Maximum island size in chunks
+  spawn-protection: true
+  void-protection: true
+  
+  # Island Expansion Costs
+  expansion-costs:
+    30x30: 100000000      # 100M Essence
+    50x50: 10000000000    # 10B Essence
+    100x100: 1000000000000 # 1T Essence
+
+# Generator Settings
+generators:
+  max-per-island: 500
+  tick-interval: 1000  # Milliseconds (1000 = 1 second)
+  chunk-loading: true
+  offline-production: false  # Requires prestige unlock
+  
+  # Collection Settings
+  collection:
+    manual-multiplier: 1.0
+    hopper-multiplier: 0.95
+    wireless-multiplier: 0.9
+    void-multiplier: 0.85
+
+# Economy Settings
+economy:
+  starting-essence: 1000
+  starting-gems: 0
+  starting-crystals: 0
+  
+  # Market Tax
+  market-tax: 0.05  # 5% tax on sales
+  
+  # Daily Rewards
+  daily-rewards:
+    enabled: true
+    essence: 10000
+    gems: 10
+
+# Prestige Settings
+prestige:
+  enabled: true
+  starting-cost: 1000000  # 1M Essence for Prestige 1
+  cost-multiplier: 1.5    # Each prestige costs 1.5x more
+  
+  # What gets reset on prestige
+  reset:
+    essence: true
+    generators: true
+    island-upgrades: true
+    gems: false
+    crystals: false
+    cosmetics: false
+
+# Ascension Settings
+ascension:
+  enabled: true
+  unlock-prestige: 50
+  cost-per-level: 100000000000  # 100B Essence per perk level
+  max-perk-level: 50
+
+# VIP Settings
+vip:
+  bronze:
+    gem-multiplier: 2.0
+    extra-generator-slots: 5
+    prestige-discount: 0.0
+  
+  silver:
+    gem-multiplier: 3.0
+    extra-generator-slots: 10
+    prestige-discount: 0.1
+  
+  gold:
+    gem-multiplier: 5.0
+    extra-generator-slots: 25
+    prestige-discount: 0.25
+  
+  platinum:
+    gem-multiplier: 10.0
+    extra-generator-slots: 50
+    prestige-discount: 0.5
+
+# Performance Settings
+performance:
+  auto-save-interval: 300  # Seconds (300 = 5 minutes)
+  backup-interval: 3600    # Seconds (3600 = 1 hour)
+  async-database: true
+  batch-updates: true
+  
+  # Chunk Loading
+  max-loaded-islands: 100
+  unload-empty-islands: true
+  unload-delay: 300  # Seconds
+
+# Leaderboard Settings
+leaderboards:
+  enabled: true
+  update-interval: 3600  # Seconds (1 hour)
+  display-top: 10
+  
+  categories:
+    - total-essence
+    - prestige-level
+    - ascension-level
+    - island-value
+    - production-rate
+    - blocks-mined
+
+# Event Settings
+events:
+  daily-challenges: true
+  weekly-events: true
+  seasonal-events: true
+  
+  # Event Schedule (0 = Sunday, 6 = Saturday)
+  weekly-schedule:
+    monday: generator-boost     # +50% production
+    tuesday: lucky-day          # 2x enchant success
+    wednesday: prestige-discount # 50% off prestige
+    thursday: trader-day        # 0% market tax
+    friday: gem-day            # 2x gem drops
+    saturday: double-essence   # 2x essence
+    sunday: random-boost       # Random bonus
+
+# Debug Settings
+debug:
+  enabled: false
+  verbose-logging: false
+  performance-monitoring: false

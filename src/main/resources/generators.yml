@@ -1,0 +1,171 @@
+# Generator Definitions
+# All costs are in Essence
+
+generators:
+  # Tier 1 - Early Game
+  stone:
+    tier: 1
+    name: "Stone Generator"
+    base-production: 1.0
+    base-cost: 500
+    max-level: 10
+    prestige-required: 0
+    
+  coal:
+    tier: 2
+    name: "Coal Generator"
+    base-production: 5.0
+    base-cost: 5000
+    max-level: 15
+    prestige-required: 0
+    
+  iron:
+    tier: 3
+    name: "Iron Generator"
+    base-production: 25.0
+    base-cost: 50000
+    max-level: 20
+    prestige-required: 0
+  
+  # Tier 4-6 - Mid Game
+  gold:
+    tier: 4
+    name: "Gold Generator"
+    base-production: 100.0
+    base-cost: 500000
+    max-level: 25
+    prestige-required: 1
+    
+  diamond:
+    tier: 5
+    name: "Diamond Generator"
+    base-production: 500.0
+    base-cost: 5000000
+    max-level: 30
+    prestige-required: 3
+    
+  emerald:
+    tier: 6
+    name: "Emerald Generator"
+    base-production: 2500.0
+    base-cost: 50000000
+    max-level: 35
+    prestige-required: 5
+  
+  # Tier 7-9 - Late Game
+  netherite:
+    tier: 7
+    name: "Netherite Generator"
+    base-production: 10000.0
+    base-cost: 500000000
+    max-level: 40
+    prestige-required: 10
+    special-effect: "fire-aura"
+    
+  essence_crystal:
+    tier: 8
+    name: "Essence Crystal Generator"
+    base-production: 50000.0
+    base-cost: 5000000000
+    max-level: 50
+    prestige-required: 20
+    special-effect: "auto-collect-radius"
+    
+  quantum:
+    tier: 9
+    name: "Quantum Generator"
+    base-production: 250000.0
+    base-cost: 50000000000
+    max-level: 60
+    prestige-required: 35
+    special-effect: "production-boost"
+  
+  # Tier 10-12 - Endgame
+  reality_forge:
+    tier: 10
+    name: "Reality Forge"
+    base-production: 1000000.0
+    base-cost: 1000000000000
+    max-level: 75
+    prestige-required: 50
+    ascension-required: 1
+    special-effect: "generator-fusion"
+    
+  void_reactor:
+    tier: 11
+    name: "Void Reactor"
+    base-production: 10000000.0
+    base-cost: 100000000000000
+    max-level: 100
+    prestige-required: 100
+    ascension-required: 3
+    special-effect: "offline-production"
+    
+  divine_nexus:
+    tier: 12
+    name: "Divine Nexus"
+    base-production: 100000000.0
+    base-cost: 10000000000000000
+    max-level: 100
+    prestige-required: 200
+    ascension-required: 10
+    special-effect: "global-multiplier"
+
+# Quality Tier Multipliers
+quality-multipliers:
+  common: 1.0
+  uncommon: 1.5
+  rare: 2.5
+  epic: 5.0
+  legendary: 10.0
+
+# Enchantment Definitions
+enchantments:
+  efficiency:
+    name: "Efficiency"
+    description: "Reduces mining delay"
+    max-level: 5
+    effect: "mining-speed"
+    bonus-per-level: 0.15
+    
+  fortune:
+    name: "Fortune"
+    description: "Bonus essence drops"
+    max-level: 3
+    effect: "drop-bonus"
+    bonus-per-level: 0.10
+    
+  looting:
+    name: "Looting"
+    description: "Rare item chance"
+    max-level: 3
+    effect: "rare-drops"
+    bonus-per-level: 0.05
+    
+  speed:
+    name: "Speed"
+    description: "Faster block regeneration"
+    max-level: 5
+    effect: "regen-speed"
+    bonus-per-level: 0.20
+    
+  overflow:
+    name: "Overflow"
+    description: "Chance for double production"
+    max-level: 3
+    effect: "double-chance"
+    bonus-per-level: 0.05
+    
+  synergy:
+    name: "Synergy"
+    description: "Bonus from nearby generators"
+    max-level: 10
+    effect: "nearby-boost"
+    bonus-per-level: 0.02
+    max-bonus: 0.50
+
+# Upgrade Cost Formula
+# Final Cost = BaseCost * (Multiplier ^ CurrentLevel)
+upgrade-cost:
+  level-multiplier: 1.15
+  quality-multiplier: 10.0  # Quality upgrade costs 10x base cost

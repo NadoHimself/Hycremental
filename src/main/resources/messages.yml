@@ -1,0 +1,134 @@
+# Hycremental Messages
+# Use {player}, {amount}, {generator}, etc. as placeholders
+
+prefix: "&6[Hycremental]&r "
+
+# General Messages
+general:
+  no-permission: "&cYou don't have permission to do that!"
+  player-only: "&cThis command can only be used by players!"
+  player-not-found: "&cPlayer {player} not found!"
+  invalid-amount: "&cInvalid amount: {amount}"
+  insufficient-essence: "&cYou need {amount} Essence for this!"
+  command-usage: "&cUsage: {usage}"
+
+# Island Messages
+island:
+  created: "&aIsland created successfully! Use /island home to teleport."
+  already-exists: "&cYou already have an island!"
+  not-found: "&cYou don't have an island! Use /island create."
+  teleported: "&aTeleported to your island."
+  member-added: "&a{player} has been added to your island."
+  member-removed: "&c{player} has been removed from your island."
+  expanded: "&aIsland expanded to {size}x{size} chunks!"
+  expansion-cost: "&eExpansion to {size}x{size} costs {cost} Essence."
+
+# Generator Messages
+generator:
+  purchased: "&aYou purchased a {generator} for {cost} Essence!"
+  placed: "&aGenerator placed successfully!"
+  upgraded: "&a{generator} upgraded to level {level}!"
+  max-level: "&cThis generator is already at max level!"
+  not-found: "&cGenerator type not found: {type}"
+  prestige-required: "&cYou need Prestige {prestige} to unlock this generator!"
+  max-generators: "&cYou've reached the maximum number of generators ({max})!"
+  info:
+    - "&6=== {generator} Info ==="
+    - "&eTier: {tier}"
+    - "&eLevel: {level}/{maxLevel}"
+    - "&eProduction: {production} Essence/s"
+    - "&eQuality: {quality}"
+    - "&eUpgrade Cost: {cost} Essence"
+
+# Economy Messages
+economy:
+  balance: "&aYour balance: &e{essence} Essence &7| &b{gems} Gems &7| &d{crystals} Crystals"
+  paid: "&aYou paid {amount} Essence to {player}."
+  received: "&aYou received {amount} Essence from {player}."
+  
+# Prestige Messages
+prestige:
+  confirm: "&eAre you sure you want to prestige? Type &a/prestige confirm&e to proceed."
+  success: "&6&lCONGRATULATIONS! &r&aYou've prestiged to level {level}!"
+  requirements-not-met: "&cYou need {amount} Essence to prestige!"
+  info:
+    - "&6=== Prestige Info ==="
+    - "&eCurrent Prestige: {prestige}"
+    - "&eNext Prestige Cost: {cost} Essence"
+    - "&eBonus Multiplier: +{multiplier}%"
+    - "&eNew Generators Unlocked: {unlocks}"
+
+# Shop Messages
+shop:
+  opened: "&aShop opened!"
+  category-not-found: "&cShop category not found: {category}"
+
+# Stats Messages
+stats:
+  header: "&6=== {player}'s Statistics ==="
+  essence: "&eTotal Essence Earned: {amount}"
+  prestige: "&ePrestige Level: {level}"
+  ascension: "&eAscension Level: {level}"
+  generators: "&eGenerators Owned: {count}"
+  blocks-mined: "&eBlocks Mined: {count}"
+  production: "&eProduction Rate: {rate} Essence/s"
+
+# Achievement Messages
+achievements:
+  unlocked: "&6&lACHIEVEMENT UNLOCKED! &r&e{achievement}"
+  reward: "&aReward: {reward}"
+
+# Event Messages
+events:
+  started: "&6[Event] &e{event} has started!"
+  ended: "&6[Event] &e{event} has ended!"
+  challenge-complete: "&a[Challenge] You completed: {challenge}"
+  reward-claimed: "&a[Challenge] Reward claimed: {reward}"
+
+# Admin Messages
+admin:
+  reload-success: "&aConfiguration reloaded successfully!"
+  backup-created: "&aBackup created successfully!"
+  player-reset: "&aPlayer {player} has been reset."
+  essence-given: "&aGave {amount} Essence to {player}."
+  essence-set: "&aSet {player}'s Essence to {amount}."
+
+# Error Messages
+errors:
+  database-error: "&c[Database Error] Please contact an administrator!"
+  command-error: "&cAn error occurred while executing this command!"
+  island-load-failed: "&cFailed to load island data!"
+  save-failed: "&cFailed to save player data!"
+
+# German Translations (DE)
+de:
+  prefix: "&6[Hycremental]&r "
+  
+  general:
+    no-permission: "&cDu hast keine Berechtigung dafür!"
+    player-only: "&cDieser Befehl kann nur von Spielern verwendet werden!"
+    player-not-found: "&cSpieler {player} nicht gefunden!"
+    invalid-amount: "&cUngültiger Betrag: {amount}"
+    insufficient-essence: "&cDu benötigst {amount} Essence dafür!"
+    
+  island:
+    created: "&aInsel erfolgreich erstellt! Nutze /island home zum Teleportieren."
+    already-exists: "&cDu hast bereits eine Insel!"
+    not-found: "&cDu hast keine Insel! Nutze /island create."
+    teleported: "&aZu deiner Insel teleportiert."
+    expanded: "&aInsel auf {size}x{size} Chunks erweitert!"
+    
+  generator:
+    purchased: "&aDu hast einen {generator} für {cost} Essence gekauft!"
+    placed: "&aGenerator erfolgreich platziert!"
+    upgraded: "&a{generator} auf Level {level} aufgewertet!"
+    max-level: "&cDieser Generator ist bereits auf maximaler Stufe!"
+    prestige-required: "&cDu benötigst Prestige {prestige} für diesen Generator!"
+    
+  prestige:
+    confirm: "&eBist du sicher, dass du Prestige machen willst? Tippe &a/prestige confirm&e."
+    success: "&6&lGRATULATION! &r&aDu hast Prestige Level {level} erreicht!"
+    
+  admin:
+    reload-success: "&aKonfiguration erfolgreich neu geladen!"
+    backup-created: "&aBackup erfolgreich erstellt!"
