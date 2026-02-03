@@ -1,18 +1,19 @@
 package de.ageofflair.hycremental.data;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
- * Represents all data for a player in Hycremental
+ * Player Data Model - Stores all player progression data
  * 
- * @author Kielian
+ * @author Kielian (NadoHimself)
+ * @version 1.0.0-ALPHA
  */
 public class PlayerData {
     
-    // Identity
+    // Player Identity
     private final UUID uuid;
     private String username;
     
@@ -27,54 +28,75 @@ public class PlayerData {
     private int rebirthCount;
     
     // Statistics
-    private BigDecimal totalEssenceEarned;
-    private long blocksMined;
-    private long generatorsOwned;
+    private BigDecimal lifetimeEssence;
+    private long totalBlocksMined;
+    private long generatorsPurchased;
+    private long prestigeCount;
     
-    // Island Reference
-    private UUID islandId;
-    
-    // Ascension Perks (PerkType -> Level)
-    private Map<String, Integer> ascensionPerks;
+    // Island Data
+    private String islandId;
+    private int islandSize;
+    private int generatorSlots;
     
     // Timestamps
     private long firstJoin;
     private long lastLogin;
     private long lastSave;
     
-    // Runtime flags
-    private boolean dirty; // Has unsaved changes
+    // Runtime Data (not saved to database)
+    private transient boolean dirty = false;
+    private transient Map<String, Object> cache = new HashMap<>();
     
     /**
      * Create new PlayerData for a player
+     * @param uuid Player UUID
+     * @param username Player username
      */
     public PlayerData(UUID uuid, String username) {
         this.uuid = uuid;
         this.username = username;
-        this.essence = new BigDecimal("1000.00"); // Starting essence
+        
+        // Initialize with default values
+        this.essence = BigDecimal.ZERO;
         this.gems = 0;
         this.crystals = 0;
+        
         this.prestigeLevel = 0;
         this.ascensionLevel = 0;
         this.rebirthCount = 0;
-        this.totalEssenceEarned = BigDecimal.ZERO;
-        this.blocksMined = 0;
-        this.generatorsOwned = 0;
-        this.ascensionPerks = new HashMap<>();
-        this.firstJoin = System.currentTimeMillis();
-        this.lastLogin = System.currentTimeMillis();
-        this.lastSave = System.currentTimeMillis();
-        this.dirty = true;
+        
+        this.lifetimeEssence = BigDecimal.ZERO;
+        this.totalBlocksMined = 0;
+        this.generatorsPurchased = 0;
+        this.prestigeCount = 0;
+        
+        this.islandId = null;
+        this.islandSize = 20; // Default 20x20 chunks
+        this.generatorSlots = 10; // Start with 10 slots
+        
+        long now = System.currentTimeMillis();
+        this.firstJoin = now;
+        this.lastLogin = now;
+        this.lastSave = now;
     }
     
-    // Essence Methods
+    // Currency Methods
     
+    /**
+     * Add essence to player
+     * @param amount Amount to add
+     */
     public void addEssence(BigDecimal amount) {
         this.essence = this.essence.add(amount);
-        this.totalEssenceEarned = this.totalEssenceEarned.add(amount);
+        this.lifetimeEssence = this.lifetimeEssence.add(amount);
         this.dirty = true;
     }
     
+    /**
+     * Remove essence from player
+     * @param amount Amount to remove
+     * @return true if successful, false if insufficient funds
+     */
     public boolean removeEssence(BigDecimal amount) {
         if (this.essence.compareTo(amount) >= 0) {
             this.essence = this.essence.subtract(amount);
@@ -84,22 +106,29 @@ public class PlayerData {
         return false;
     }
     
+    /**
+     * Check if player has enough essence
+     * @param amount Amount to check
+     * @return true if player has enough
+     */
     public boolean hasEssence(BigDecimal amount) {
         return this.essence.compareTo(amount) >= 0;
     }
     
-    public void setEssence(BigDecimal essence) {
-        this.essence = essence;
-        this.dirty = true;
-    }
-    
-    // Gems Methods
-    
+    /**
+     * Add gems to player
+     * @param amount Amount to add
+     */
     public void addGems(long amount) {
         this.gems += amount;
         this.dirty = true;
     }
     
+    /**
+     * Remove gems from player
+     * @param amount Amount to remove
+     * @return true if successful
+     */
     public boolean removeGems(long amount) {
         if (this.gems >= amount) {
             this.gems -= amount;
@@ -109,17 +138,20 @@ public class PlayerData {
         return false;
     }
     
-    public boolean hasGems(long amount) {
-        return this.gems >= amount;
-    }
-    
-    // Crystals Methods
-    
+    /**
+     * Add crystals to player
+     * @param amount Amount to add
+     */
     public void addCrystals(int amount) {
         this.crystals += amount;
         this.dirty = true;
     }
     
+    /**
+     * Remove crystals from player
+     * @param amount Amount to remove
+     * @return true if successful
+     */
     public boolean removeCrystals(int amount) {
         if (this.crystals >= amount) {
             this.crystals -= amount;
@@ -129,58 +161,120 @@ public class PlayerData {
         return false;
     }
     
-    public boolean hasCrystals(int amount) {
-        return this.crystals >= amount;
-    }
-    
     // Progression Methods
     
-    public void incrementPrestige() {
+    /**
+     * Prestige the player
+     */
+    public void prestige() {
         this.prestigeLevel++;
+        this.prestigeCount++;
+        this.essence = BigDecimal.ZERO;
         this.dirty = true;
     }
     
-    public void incrementAscension() {
+    /**
+     * Ascend the player
+     */
+    public void ascend() {
         this.ascensionLevel++;
         this.dirty = true;
     }
     
-    public void incrementRebirth() {
+    /**
+     * Rebirth the player
+     */
+    public void rebirth() {
         this.rebirthCount++;
+        this.prestigeLevel = 0;
+        this.ascensionLevel = 0;
+        this.essence = BigDecimal.ZERO;
+        this.gems = 0;
         this.dirty = true;
     }
     
-    // Ascension Perks
+    // Statistics Methods
     
-    public int getAscensionPerkLevel(String perkType) {
-        return ascensionPerks.getOrDefault(perkType, 0);
-    }
-    
-    public void setAscensionPerkLevel(String perkType, int level) {
-        ascensionPerks.put(perkType, level);
-        this.dirty = true;
-    }
-    
-    public void incrementAscensionPerk(String perkType) {
-        int currentLevel = getAscensionPerkLevel(perkType);
-        setAscensionPerkLevel(perkType, currentLevel + 1);
-    }
-    
-    // Statistics
-    
+    /**
+     * Increment blocks mined counter
+     */
     public void incrementBlocksMined() {
-        this.blocksMined++;
+        this.totalBlocksMined++;
         this.dirty = true;
     }
     
+    /**
+     * Increment generators purchased counter
+     */
+    public void incrementGeneratorsPurchased() {
+        this.generatorsPurchased++;
+        this.dirty = true;
+    }
+    
+    // Island Methods
+    
+    /**
+     * Set island ID
+     * @param islandId Island UUID
+     */
+    public void setIslandId(String islandId) {
+        this.islandId = islandId;
+        this.dirty = true;
+    }
+    
+    /**
+     * Upgrade island size
+     * @param newSize New size in chunks
+     */
+    public void upgradeIslandSize(int newSize) {
+        this.islandSize = newSize;
+        this.dirty = true;
+    }
+    
+    /**
+     * Add generator slots
+     * @param slots Number of slots to add
+     */
+    public void addGeneratorSlots(int slots) {
+        this.generatorSlots += slots;
+        this.dirty = true;
+    }
+    
+    // Utility Methods
+    
+    /**
+     * Update last login timestamp
+     */
     public void updateLastLogin() {
         this.lastLogin = System.currentTimeMillis();
         this.dirty = true;
     }
     
+    /**
+     * Update last save timestamp
+     */
     public void updateLastSave() {
         this.lastSave = System.currentTimeMillis();
-        this.dirty = false; // Clear dirty flag after save
+        this.dirty = false;
+    }
+    
+    /**
+     * Calculate total multiplier from progression
+     * @return Total multiplier
+     */
+    public double calculateTotalMultiplier() {
+        double multiplier = 1.0;
+        
+        // Prestige multiplier (10% per prestige)
+        multiplier += (prestigeLevel * 0.10);
+        
+        // Ascension multiplier (50% per ascension)
+        multiplier += (ascensionLevel * 0.50);
+        
+        // Rebirth multiplier (2x per rebirth)
+        multiplier *= Math.pow(2, rebirthCount);
+        
+        return multiplier;
     }
     
     // Getters and Setters
@@ -202,12 +296,27 @@ public class PlayerData {
         return essence;
     }
     
+    public void setEssence(BigDecimal essence) {
+        this.essence = essence;
+        this.dirty = true;
+    }
+    
     public long getGems() {
         return gems;
     }
     
+    public void setGems(long gems) {
+        this.gems = gems;
+        this.dirty = true;
+    }
+    
     public int getCrystals() {
         return crystals;
+    }
+    
+    public void setCrystals(int crystals) {
+        this.crystals = crystals;
+        this.dirty = true;
     }
     
     public int getPrestigeLevel() {
@@ -232,29 +341,66 @@ public class PlayerData {
         return rebirthCount;
     }
     
-    public BigDecimal getTotalEssenceEarned() {
-        return totalEssenceEarned;
-    }
-    
-    public long getBlocksMined() {
-        return blocksMined;
-    }
-    
-    public long getGeneratorsOwned() {
-        return generatorsOwned;
-    }
-    
-    public void setGeneratorsOwned(long count) {
-        this.generatorsOwned = count;
+    public void setRebirthCount(int rebirthCount) {
+        this.rebirthCount = rebirthCount;
         this.dirty = true;
     }
     
-    public UUID getIslandId() {
+    public BigDecimal getLifetimeEssence() {
+        return lifetimeEssence;
+    }
+    
+    public void setLifetimeEssence(BigDecimal lifetimeEssence) {
+        this.lifetimeEssence = lifetimeEssence;
+        this.dirty = true;
+    }
+    
+    public long getTotalBlocksMined() {
+        return totalBlocksMined;
+    }
+    
+    public void setTotalBlocksMined(long totalBlocksMined) {
+        this.totalBlocksMined = totalBlocksMined;
+        this.dirty = true;
+    }
+    
+    public long getGeneratorsPurchased() {
+        return generatorsPurchased;
+    }
+    
+    public void setGeneratorsPurchased(long generatorsPurchased) {
+        this.generatorsPurchased = generatorsPurchased;
+        this.dirty = true;
+    }
+    
+    public long getPrestigeCount() {
+        return prestigeCount;
+    }
+    
+    public void setPrestigeCount(long prestigeCount) {
+        this.prestigeCount = prestigeCount;
+        this.dirty = true;
+    }
+    
+    public String getIslandId() {
         return islandId;
     }
     
-    public void setIslandId(UUID islandId) {
-        this.islandId = islandId;
+    public int getIslandSize() {
+        return islandSize;
+    }
+    
+    public void setIslandSize(int islandSize) {
+        this.islandSize = islandSize;
+        this.dirty = true;
+    }
+    
+    public int getGeneratorSlots() {
+        return generatorSlots;
+    }
+    
+    public void setGeneratorSlots(int generatorSlots) {
+        this.generatorSlots = generatorSlots;
         this.dirty = true;
     }
     
@@ -278,14 +424,19 @@ public class PlayerData {
         this.dirty = dirty;
     }
     
+    public Map<String, Object> getCache() {
+        return cache;
+    }
+    
     @Override
     public String toString() {
         return "PlayerData{" +
                 "uuid=" + uuid +
                 ", username='" + username + '\'' +
                 ", essence=" + essence +
-                ", prestige=" + prestigeLevel +
-                ", ascension=" + ascensionLevel +
+                ", prestigeLevel=" + prestigeLevel +
+                ", ascensionLevel=" + ascensionLevel +
+                ", rebirthCount=" + rebirthCount +
                 '}';
     }
 }
