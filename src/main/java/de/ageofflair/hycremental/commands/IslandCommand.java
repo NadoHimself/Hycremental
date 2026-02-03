@@ -1,14 +1,21 @@
 package de.ageofflair.hycremental.commands;
 
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.command.Command;
 import com.hypixel.hytale.server.core.command.system.CommandSender;
 
 import javax.annotation.Nonnull;
 
-public class IslandCommand {
-    
+public class IslandCommand implements Command {
+
+    @Nonnull
+    @Override
+    public String getName() {
+        return "island";
+    }
+
+    @Override
     public void execute(@Nonnull CommandSender sender, @Nonnull String[] args) {
-        // Island-Management (teleport, create, delete, etc.)
         if (args.length == 0) {
             sender.sendMessage(Message.raw("§aInsel-Menü wird geöffnet..."));
         } else {
@@ -27,7 +34,6 @@ public class IslandCommand {
                     sender.sendMessage(Message.raw("§cUnbekannter Subcommand: " + subCommand));
             }
         }
-        
         // TODO: Implement island logic
     }
 }

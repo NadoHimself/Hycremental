@@ -1,14 +1,21 @@
 package de.ageofflair.hycremental.commands;
 
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.command.Command;
 import com.hypixel.hytale.server.core.command.system.CommandSender;
 
 import javax.annotation.Nonnull;
 
-public class EssenceCommand {
-    
+public class EssenceCommand implements Command {
+
+    @Nonnull
+    @Override
+    public String getName() {
+        return "essence";
+    }
+
+    @Override
     public void execute(@Nonnull CommandSender sender, @Nonnull String[] args) {
-        // Essence-Währung verwalten
         if (args.length == 0) {
             sender.sendMessage(Message.raw("§bEssence-Info wird angezeigt..."));
         } else if (args.length >= 2) {
@@ -32,7 +39,6 @@ public class EssenceCommand {
                 sender.sendMessage(Message.raw("§cUngültige Zahl: " + args[1]));
             }
         }
-        
         // TODO: Implement essence logic
     }
 }

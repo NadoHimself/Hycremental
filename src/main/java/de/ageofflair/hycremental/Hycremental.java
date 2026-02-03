@@ -122,13 +122,12 @@ public class Hycremental extends JavaPlugin {
     }
     
     private void registerCommands() {
-        // Commands müssen über register() mit Method Reference registriert werden,
-        // nicht über registerCommand() - die Commands implementieren kein Interface mehr
-        getCommandRegistry().register("essence", new EssenceCommand()::execute);
-        getCommandRegistry().register("island", new IslandCommand()::execute);
-        getCommandRegistry().register("shop", new ShopCommand()::execute);
-        getCommandRegistry().register("generator", new GeneratorCommand()::execute);
-        getCommandRegistry().register("prestige", new PrestigeCommand()::execute);
+        // Commands mit Command Interface registrieren
+        getCommandRegistry().registerCommand(new EssenceCommand());
+        getCommandRegistry().registerCommand(new IslandCommand());
+        getCommandRegistry().registerCommand(new ShopCommand());
+        getCommandRegistry().registerCommand(new GeneratorCommand());
+        getCommandRegistry().registerCommand(new PrestigeCommand());
         
         getLogger().info("Successfully registered 5 commands!");
     }
