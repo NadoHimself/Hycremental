@@ -1,45 +1,43 @@
 package de.ageofflair.hycremental.commands;
 
-import com.hypixel.hytale.server.core.command.Command;
-import com.hypixel.hytale.server.core.command.CommandSender;
+import com.hypixel.hytale.server.core.command.system.basecommands.CommandBase;
+import com.hypixel.hytale.server.core.command.context.CommandContext;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.Message;
 import de.ageofflair.hycremental.Hycremental;
-import de.ageofflair.hycremental.island.IslandData;
+import de.ageofflair.hycremental.data.PlayerData;
+
+import javax.annotation.Nonnull;
 
 /**
- * Island Command - Teleport to island and manage it
+ * Island Command - Manage player island
  */
-public class IslandCommand implements Command {
+public class IslandCommand extends CommandBase {
     
     private final Hycremental plugin;
     
     public IslandCommand(Hycremental plugin) {
+        super("island", "Manage your private island");
         this.plugin = plugin;
     }
     
     @Override
-    public String getName() {
-        return "island";
-    }
-    
-    @Override
-    public void execute(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player)) {
-            sender.sendMessage(Message.raw("§cThis command can only be used by players!"));
+    protected void executeSync(@Nonnull CommandContext context) {
+        if (!context.isPlayer()) {
+            context.sendMessage(Message.raw("§cThis command can only be used by players!"));
             return;
         }
         
-        Player player = (Player) sender;
-        IslandData island = plugin.getIslandManager().getIsland(player.getUuid());
+        Player player = context.senderAs(Player.class);
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUuid());
         
-        if (island == null) {
-            player.sendMessage(Message.raw("§cYou don't have an island yet!"));
+        if (playerData == null) {
+            context.sendMessage(Message.raw("§cPlayer data not found!"));
             return;
         }
         
-        // TODO: Teleport player to island spawn
-        player.sendMessage(Message.raw("§6Teleporting to your island..."));
-        player.sendMessage(Message.raw("§7Island Size: §e" + island.getSize() + "x" + island.getSize()));
+        context.sendMessage(Message.raw("§6§l=== Your Island ==="));
+        context.sendMessage(Message.raw("§7Island Size: §e" + playerData.getIslandSize() + "x" + playerData.getIslandSize()));
+        context.sendMessage(Message.raw("§7Generator Slots: §e" + playerData.getGeneratorSlots()));
     }
 }
