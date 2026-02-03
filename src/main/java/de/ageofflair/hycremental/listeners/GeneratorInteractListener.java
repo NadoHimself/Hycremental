@@ -1,9 +1,9 @@
 package de.ageofflair.hycremental.listeners;
 
-import com.hypixel.hytale.server.core.event.EventHandler;
-import com.hypixel.hytale.server.core.event.player.PlayerInteractEvent;
-import com.hypixel.hytale.server.player.ServerPlayer;
-import com.hypixel.hytale.world.block.Block;
+import com.hypixel.hytale.server.core.event.events.player.PlayerInteractEvent;
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.math.vector.Vector3i;
 import de.ageofflair.hycremental.Hycremental;
 
 /**
@@ -17,16 +17,17 @@ public class GeneratorInteractListener {
         this.plugin = plugin;
     }
     
-    @EventHandler
     public void onInteract(PlayerInteractEvent event) {
-        ServerPlayer player = event.getPlayer();
-        Block clickedBlock = event.getClickedBlock();
+        // Get player from component holder
+        if (!(event.getHolder().toEntity() instanceof Player)) {
+            return;
+        }
         
-        if (clickedBlock == null) return;
+        Player player = (Player) event.getHolder().toEntity();
         
         // TODO: Check if clicked block is a generator
         // TODO: Open generator UI or collect resources
         
-        player.sendMessage("§7You interacted with a block!");
+        player.sendMessage(Message.raw("§7You interacted with a block!"));
     }
 }

@@ -1,9 +1,9 @@
 package de.ageofflair.hycremental.listeners;
 
-import com.hypixel.hytale.server.core.event.EventHandler;
-import com.hypixel.hytale.server.core.event.block.BlockBreakEvent;
-import com.hypixel.hytale.server.player.ServerPlayer;
-import com.hypixel.hytale.world.block.Block;
+import com.hypixel.hytale.server.core.event.events.ecs.BreakBlockEvent;
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.math.vector.Vector3i;
 import de.ageofflair.hycremental.Hycremental;
 import de.ageofflair.hycremental.data.PlayerData;
 
@@ -20,17 +20,21 @@ public class BlockBreakListener {
         this.plugin = plugin;
     }
     
-    @EventHandler
-    public void onBlockBreak(BlockBreakEvent event) {
-        ServerPlayer player = event.getPlayer();
-        Block block = event.getBlock();
+    public void onBlockBreak(BreakBlockEvent event) {
+        // Get player from component holder
+        if (!(event.getHolder().toEntity() instanceof Player)) {
+            return;
+        }
+        
+        Player player = (Player) event.getHolder().toEntity();
+        Vector3i blockPos = event.getTargetBlock();
         
         // Get player data
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUUID());
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(player.getUuid());
         if (playerData == null) return;
         
-        // Calculate essence gain based on block type
-        BigDecimal essenceGain = calculateEssenceGain(block, playerData);
+        // Calculate essence gain
+        BigDecimal essenceGain = calculateEssenceGain(playerData);
         
         // Add essence to player
         playerData.addEssence(essenceGain);
@@ -38,14 +42,14 @@ public class BlockBreakListener {
         
         // Send message every 10 blocks
         if (playerData.getBlocksMined() % 10 == 0) {
-            player.sendMessage("§7+" + essenceGain.toPlainString() + " Essence §8(" + playerData.getBlocksMined() + " blocks mined)");
+            player.sendMessage(Message.raw("§7+" + essenceGain.toPlainString() + " Essence §8(" + playerData.getBlocksMined() + " blocks mined)"));
         }
     }
     
     /**
      * Calculate essence gain from block break
      */
-    private BigDecimal calculateEssenceGain(Block block, PlayerData playerData) {
+    private BigDecimal calculateEssenceGain(PlayerData playerData) {
         BigDecimal baseAmount = BigDecimal.ONE;
         
         // Apply prestige multiplier

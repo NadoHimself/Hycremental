@@ -1,9 +1,9 @@
 package de.ageofflair.hycremental.listeners;
 
-import com.hypixel.hytale.server.core.event.EventHandler;
-import com.hypixel.hytale.server.core.event.block.BlockPlaceEvent;
-import com.hypixel.hytale.server.player.ServerPlayer;
-import com.hypixel.hytale.world.block.Block;
+import com.hypixel.hytale.server.core.event.events.ecs.PlaceBlockEvent;
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.math.vector.Vector3i;
 import de.ageofflair.hycremental.Hycremental;
 import de.ageofflair.hycremental.island.IslandData;
 
@@ -18,18 +18,22 @@ public class GeneratorPlaceListener {
         this.plugin = plugin;
     }
     
-    @EventHandler
-    public void onBlockPlace(BlockPlaceEvent event) {
-        ServerPlayer player = event.getPlayer();
-        Block block = event.getBlock();
+    public void onBlockPlace(PlaceBlockEvent event) {
+        // Get player from component holder
+        if (!(event.getHolder().toEntity() instanceof Player)) {
+            return;
+        }
+        
+        Player player = (Player) event.getHolder().toEntity();
+        Vector3i blockPos = event.getTargetBlock();
         
         // Check if player is on their island
-        IslandData island = plugin.getIslandManager().getIsland(player.getUUID());
+        IslandData island = plugin.getIslandManager().getIsland(player.getUuid());
         if (island == null) return;
         
         // TODO: Check if block is a generator block
         // TODO: Register generator at this location
         
-        player.sendMessage("§7Block placed at island!");
+        player.sendMessage(Message.raw("§7Block placed at island!"));
     }
 }
