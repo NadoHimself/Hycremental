@@ -1,47 +1,24 @@
 package de.ageofflair.hycremental.commands;
 
-import com.hypixel.hytale.server.core.command.Command;
-import com.hypixel.hytale.server.core.command.system.CommandSender;
-import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.Message;
-import de.ageofflair.hycremental.Hycremental;
-import de.ageofflair.hycremental.data.PlayerData;
+import com.hypixel.hytale.server.core.command.CommandBase;
+import com.hypixel.hytale.server.core.command.CommandContext;
 
-import java.util.UUID;
+import javax.annotation.Nonnull;
 
 /**
- * Prestige Command - Reset progress for permanent bonuses
+ * Command to prestige and reset progress for bonuses.
+ * Allows players to start over with permanent multipliers.
  */
-public class PrestigeCommand extends Command {
+public class PrestigeCommand extends CommandBase {
     
-    private final Hycremental plugin;
-    
-    public PrestigeCommand(Hycremental plugin) {
-        this.plugin = plugin;
+    public PrestigeCommand() {
+        super("prestige", "hycremental.commands.prestige.description");
     }
     
     @Override
-    public String getName() {
-        return "prestige";
-    }
-    
-    @Override
-    public void execute(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player)) {
-            sender.sendMessage(Message.raw("§cThis command can only be used by players!"));
-            return;
-        }
-        
-        Player player = (Player) sender;
-        UUID uuid = player.getUuid();
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(uuid);
-        
-        if (playerData == null) {
-            player.sendMessage(Message.raw("§cError loading player data!"));
-            return;
-        }
-        
-        player.sendMessage(Message.raw("§6§l=== Prestige System ==="));
-        player.sendMessage(Message.raw("§7Prestige system coming soon!"));
+    protected void executeSync(@Nonnull CommandContext context) {
+        // TODO: Implement prestige system
+        context.sendMessage(Message.raw("§aPrestige command - Coming soon!"));
     }
 }
