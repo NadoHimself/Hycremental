@@ -122,11 +122,15 @@ public class Hycremental extends JavaPlugin {
     }
     
     private void registerCommands() {
-        getCommandRegistry().registerCommand(new EssenceCommand(this));
-        getCommandRegistry().registerCommand(new IslandCommand(this));
-        getCommandRegistry().registerCommand(new ShopCommand(this));
-        getCommandRegistry().registerCommand(new GeneratorCommand(this));
-        getCommandRegistry().registerCommand(new PrestigeCommand(this));
+        // Commands müssen über register() mit Method Reference registriert werden,
+        // nicht über registerCommand() - die Commands implementieren kein Interface mehr
+        getCommandRegistry().register("essence", new EssenceCommand()::execute);
+        getCommandRegistry().register("island", new IslandCommand()::execute);
+        getCommandRegistry().register("shop", new ShopCommand()::execute);
+        getCommandRegistry().register("generator", new GeneratorCommand()::execute);
+        getCommandRegistry().register("prestige", new PrestigeCommand()::execute);
+        
+        getLogger().info("Successfully registered 5 commands!");
     }
     
     private void registerEvents() {
@@ -142,6 +146,7 @@ public class Hycremental extends JavaPlugin {
     }
     
     private void startBackgroundTasks() {
+        // Auto-save every 5 minutes
         HytaleServer.SCHEDULED_EXECUTOR.scheduleAtFixedRate(() -> {
             try {
                 getLogger().info("Auto-saving player data...");
@@ -153,6 +158,7 @@ public class Hycremental extends JavaPlugin {
             }
         }, 300, 300, TimeUnit.SECONDS);
         
+        // Process generators every second
         HytaleServer.SCHEDULED_EXECUTOR.scheduleAtFixedRate(() -> {
             try {
                 if (generatorManager != null) {
@@ -163,9 +169,11 @@ public class Hycremental extends JavaPlugin {
             }
         }, 1, 1, TimeUnit.SECONDS);
         
+        // Update leaderboards every hour
         HytaleServer.SCHEDULED_EXECUTOR.scheduleAtFixedRate(() -> {
             try {
                 getLogger().info("Updating leaderboards...");
+                // TODO: Implement leaderboard update logic
             } catch (Exception e) {
                 getLogger().severe("Error updating leaderboards: " + e.getMessage());
             }
