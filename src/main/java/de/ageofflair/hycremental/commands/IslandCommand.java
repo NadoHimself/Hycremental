@@ -1,282 +1,268 @@
 package de.ageofflair.hycremental.commands;
 
+import com.hypixel.hytale.server.core.command.system.basecommands.AbstractAsyncCommand;
+import com.hypixel.hytale.server.core.command.system.CommandContext;
+import com.hypixel.hytale.server.core.command.system.CommandDescriptor;
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+
 import de.ageofflair.hycremental.Hycremental;
-import de.ageofflair.hycremental.core.IslandManager;
-import de.ageofflair.hycremental.data.IslandData;
-// import com.hytale.api.command.Command;
-// import com.hytale.api.command.CommandExecutor;
-// import com.hytale.api.command.CommandSender;
-// import com.hytale.api.entity.Player;
+import de.ageofflair.hycremental.data.PlayerData;
+import de.ageofflair.hycremental.island.IslandData;
+import de.ageofflair.hycremental.utils.NumberFormatter;
+
+import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
- * Command handler for Island operations
- * /island [create|home|delete|invite|kick|info]
+ * Island Command - Manage player islands
+ * 
+ * Commands:
+ * /island - Teleport to your island
+ * /island info - View island information
+ * /island expand - Expand island size
+ * /island slots - Upgrade generator slots
+ * /island visit <player> - Visit another player's island
+ * /island home - Return to your island
+ * 
+ * @author Kielian (NadoHimself)
+ * @version 1.0.0-ALPHA
  */
-public class IslandCommand { // implements CommandExecutor {
+public class IslandCommand extends AbstractAsyncCommand {
     
     private final Hycremental plugin;
-    private final IslandManager islandManager;
     
     public IslandCommand(Hycremental plugin) {
         this.plugin = plugin;
-        this.islandManager = plugin.getIslandManager();
     }
     
-    // @Override
-    public boolean onCommand(Object sender, Object command, String label, String[] args) {
-        /*
-        if (!(sender instanceof Player)) {
-            sender.sendMessage("§cThis command can only be used by players!");
-            return true;
+    @Override
+    public CommandDescriptor buildDescriptor() {
+        return CommandDescriptor.builder()
+            .name("island")
+            .description("Manage your island")
+            .aliases("is", "isle")
+            .build();
+    }
+    
+    @Override
+    public void run(CommandContext context) {
+        if (!context.sender().isPlayer()) {
+            context.sender().sendMessage(Message.raw("§cOnly players can use this command!"));
+            return;
         }
         
-        Player player = (Player) sender;
+        Player player = context.sender().asPlayer();
+        UUID uuid = player.getComponent(PlayerRef.class).getUuid();
+        String[] args = context.args();
         
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(uuid);
+        if (playerData == null) {
+            player.sendMessage(Message.raw("§cError loading player data!"));
+            return;
+        }
+        
+        // No arguments - teleport home
         if (args.length == 0) {
-            sendHelp(player);
-            return true;
+            teleportToIsland(player, playerData);
+            return;
         }
         
         String subCommand = args[0].toLowerCase();
         
         switch (subCommand) {
-            case "create":
-                createIsland(player);
+            case "info":
+            case "stats":
+                showIslandInfo(player, playerData);
+                break;
+                
+            case "expand":
+            case "upgrade":
+                expandIsland(player, playerData);
+                break;
+                
+            case "slots":
+                upgradeSlots(player, playerData);
+                break;
+                
+            case "visit":
+            case "warp":
+                visitIsland(player, args);
                 break;
                 
             case "home":
             case "tp":
-                teleportToIsland(player);
+                teleportToIsland(player, playerData);
                 break;
                 
-            case "delete":
-                deleteIsland(player);
-                break;
-                
-            case "invite":
-                if (args.length < 2) {
-                    player.sendMessage("§cUsage: /island invite <player>");
-                    return true;
-                }
-                inviteMember(player, args[1]);
-                break;
-                
-            case "kick":
-                if (args.length < 2) {
-                    player.sendMessage("§cUsage: /island kick <player>");
-                    return true;
-                }
-                kickMember(player, args[1]);
-                break;
-                
-            case "info":
-                showIslandInfo(player);
-                break;
-                
-            case "upgrade":
-                // TODO: Open upgrade menu
-                player.sendMessage("§eUpgrade menu coming soon!");
+            case "help":
+                sendHelp(player);
                 break;
                 
             default:
-                sendHelp(player);
-                break;
+                player.sendMessage(Message.raw("§cUnknown subcommand! Use /island help"));
         }
-        */
-        return true;
-    }
-    
-    /**
-     * Create new island for player
-     */
-    private void createIsland(Object player) { // Player player
-        /*
-        // Check if player already has island
-        if (islandManager.hasIsland(player.getUniqueId())) {
-            player.sendMessage("§cYou already have an island!");
-            return;
-        }
-        
-        // Create island
-        IslandData island = islandManager.createIsland(player.getUniqueId());
-        if (island == null) {
-            player.sendMessage("§cFailed to create island!");
-            return;
-        }
-        
-        // Teleport player to island
-        player.teleport(new Location(
-            plugin.getServer().getWorld(island.getWorldName()),
-            island.getSpawnX(),
-            island.getSpawnY(),
-            island.getSpawnZ()
-        ));
-        
-        // Success message
-        player.sendMessage("");
-        player.sendMessage("§a§lIsland Created!");
-        player.sendMessage("§7Your island is §e" + island.getSizeX() + "x" + island.getSizeZ() + " §7chunks");
-        player.sendMessage("§7Generator Slots: §b" + island.getMaxGenerators());
-        player.sendMessage("§7Use §e/shop §7to buy your first generator!");
-        player.sendMessage("");
-        */
     }
     
     /**
      * Teleport player to their island
      */
-    private void teleportToIsland(Object player) { // Player player
-        /*
-        IslandData island = islandManager.getPlayerIsland(player.getUniqueId());
+    private void teleportToIsland(Player player, PlayerData playerData) {
+        IslandData island = plugin.getIslandManager().getIsland(playerData.getUuid());
+        
         if (island == null) {
-            player.sendMessage("§cYou don't have an island! Use /island create");
+            player.sendMessage(Message.raw("§cYou don't have an island yet!"));
             return;
         }
         
-        player.teleport(new Location(
-            plugin.getServer().getWorld(island.getWorldName()),
-            island.getSpawnX(),
-            island.getSpawnY(),
-            island.getSpawnZ()
-        ));
+        // TODO: Implement with Hytale Location/Teleport API
+        // player.teleport(island.getSpawnLocation());
         
-        player.sendMessage("§aTeleported to your island!");
-        */
-    }
-    
-    /**
-     * Delete player's island
-     */
-    private void deleteIsland(Object player) { // Player player
-        /*
-        IslandData island = islandManager.getPlayerIsland(player.getUniqueId());
-        if (island == null) {
-            player.sendMessage("§cYou don't have an island!");
-            return;
-        }
-        
-        if (!island.isOwner(player.getUniqueId())) {
-            player.sendMessage("§cOnly the island owner can delete it!");
-            return;
-        }
-        
-        // TODO: Add confirmation system
-        islandManager.deleteIsland(island.getIslandId());
-        player.sendMessage("§aYour island has been deleted!");
-        */
-    }
-    
-    /**
-     * Invite member to island
-     */
-    private void inviteMember(Object sender, String targetName) { // Player sender
-        /*
-        IslandData island = islandManager.getPlayerIsland(sender.getUniqueId());
-        if (island == null) {
-            sender.sendMessage("§cYou don't have an island!");
-            return;
-        }
-        
-        if (!island.isAdmin(sender.getUniqueId())) {
-            sender.sendMessage("§cOnly admins can invite members!");
-            return;
-        }
-        
-        Player target = plugin.getServer().getPlayer(targetName);
-        if (target == null) {
-            sender.sendMessage("§cPlayer not found!");
-            return;
-        }
-        
-        if (island.isMember(target.getUniqueId())) {
-            sender.sendMessage("§cPlayer is already a member!");
-            return;
-        }
-        
-        if (island.addMember(target.getUniqueId())) {
-            sender.sendMessage("§aInvited " + targetName + " to your island!");
-            target.sendMessage("§aYou have been invited to " + sender.getName() + "'s island!");
-        } else {
-            sender.sendMessage("§cIsland is full! Upgrade member slots first.");
-        }
-        */
-    }
-    
-    /**
-     * Kick member from island
-     */
-    private void kickMember(Object sender, String targetName) { // Player sender
-        /*
-        IslandData island = islandManager.getPlayerIsland(sender.getUniqueId());
-        if (island == null) {
-            sender.sendMessage("§cYou don't have an island!");
-            return;
-        }
-        
-        if (!island.isAdmin(sender.getUniqueId())) {
-            sender.sendMessage("§cOnly admins can kick members!");
-            return;
-        }
-        
-        Player target = plugin.getServer().getPlayer(targetName);
-        if (target == null) {
-            sender.sendMessage("§cPlayer not found!");
-            return;
-        }
-        
-        if (!island.isMember(target.getUniqueId())) {
-            sender.sendMessage("§cPlayer is not a member!");
-            return;
-        }
-        
-        if (island.removeMember(target.getUniqueId())) {
-            sender.sendMessage("§aKicked " + targetName + " from your island!");
-            target.sendMessage("§cYou have been kicked from " + sender.getName() + "'s island!");
-        } else {
-            sender.sendMessage("§cFailed to kick player!");
-        }
-        */
+        player.sendMessage(Message.raw("§a§l✓ Teleported! §7Welcome to your island!"));
     }
     
     /**
      * Show island information
      */
-    private void showIslandInfo(Object player) { // Player player
-        /*
-        IslandData island = islandManager.getPlayerIsland(player.getUniqueId());
+    private void showIslandInfo(Player player, PlayerData playerData) {
+        IslandData island = plugin.getIslandManager().getIsland(playerData.getUuid());
+        
         if (island == null) {
-            player.sendMessage("§cYou don't have an island!");
+            player.sendMessage(Message.raw("§cYou don't have an island yet!"));
             return;
         }
         
-        player.sendMessage("");
-        player.sendMessage("§6§l=== Island Info ===");
-        player.sendMessage("§7Name: §e" + island.getIslandName());
-        player.sendMessage("§7Size: §b" + island.getSizeX() + "x" + island.getSizeZ() + " chunks");
-        player.sendMessage("§7Generators: §e" + island.getGeneratorCount() + "§7/§e" + island.getMaxGenerators());
-        player.sendMessage("§7Members: §b" + island.getMembers().size() + "§7/§b" + island.getMaxMembers());
-        player.sendMessage("§7Age: §e" + island.getAgeInDays() + " days");
-        player.sendMessage("§7Total Value: §6" + NumberFormatter.format(island.calculateTotalValue()));
-        player.sendMessage("");
-        */
+        int activeGenerators = plugin.getGeneratorManager().getPlayerGeneratorCount(playerData.getUuid());
+        
+        player.sendMessage(Message.raw("§7§m─────────────────────────────"));
+        player.sendMessage(Message.raw("§6§lYour Island"));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7Size: §e" + playerData.getIslandSize() + "x" + playerData.getIslandSize() + " chunks"));
+        player.sendMessage(Message.raw("§7Generator Slots: §e" + activeGenerators + "§7/§e" + playerData.getGeneratorSlots()));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7Upgrade Costs:"));
+        player.sendMessage(Message.raw("§8 • §7Expand (+2 chunks): §a" + NumberFormatter.format(calculateExpandCost(playerData.getIslandSize()))));
+        player.sendMessage(Message.raw("§8 • §7+5 Slots: §a" + NumberFormatter.format(calculateSlotCost(playerData.getGeneratorSlots()))));
+        player.sendMessage(Message.raw("§7§m─────────────────────────────"));
+    }
+    
+    /**
+     * Expand island size
+     */
+    private void expandIsland(Player player, PlayerData playerData) {
+        int currentSize = playerData.getIslandSize();
+        
+        if (currentSize >= 100) {
+            player.sendMessage(Message.raw("§cYour island is already at maximum size!"));
+            return;
+        }
+        
+        BigDecimal cost = calculateExpandCost(currentSize);
+        
+        if (!playerData.hasEssence(cost)) {
+            player.sendMessage(Message.raw("§cInsufficient Essence! Need: " + NumberFormatter.format(cost)));
+            return;
+        }
+        
+        // Process upgrade
+        playerData.removeEssence(cost);
+        playerData.setIslandSize(currentSize + 2);
+        
+        player.sendMessage(Message.raw("§a§l✓ Upgraded! §7Island size is now §e" + playerData.getIslandSize() + "x" + playerData.getIslandSize()));
+        player.sendMessage(Message.raw("§7Cost: §c-" + NumberFormatter.format(cost) + " Essence"));
+    }
+    
+    /**
+     * Upgrade generator slots
+     */
+    private void upgradeSlots(Player player, PlayerData playerData) {
+        int currentSlots = playerData.getGeneratorSlots();
+        
+        if (currentSlots >= 500) {
+            player.sendMessage(Message.raw("§cYou have maximum generator slots!"));
+            return;
+        }
+        
+        BigDecimal cost = calculateSlotCost(currentSlots);
+        
+        if (!playerData.hasEssence(cost)) {
+            player.sendMessage(Message.raw("§cInsufficient Essence! Need: " + NumberFormatter.format(cost)));
+            return;
+        }
+        
+        // Process upgrade
+        playerData.removeEssence(cost);
+        playerData.setGeneratorSlots(currentSlots + 5);
+        
+        player.sendMessage(Message.raw("§a§l✓ Upgraded! §7You now have §e" + playerData.getGeneratorSlots() + " generator slots"));
+        player.sendMessage(Message.raw("§7Cost: §c-" + NumberFormatter.format(cost) + " Essence"));
+    }
+    
+    /**
+     * Visit another player's island
+     */
+    private void visitIsland(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage(Message.raw("§cUsage: /island visit <player>"));
+            return;
+        }
+        
+        String targetName = args[1];
+        PlayerData targetData = plugin.getPlayerDataManager().getPlayerDataByName(targetName);
+        
+        if (targetData == null) {
+            player.sendMessage(Message.raw("§cPlayer not found!"));
+            return;
+        }
+        
+        IslandData island = plugin.getIslandManager().getIsland(targetData.getUuid());
+        if (island == null) {
+            player.sendMessage(Message.raw("§cThat player doesn't have an island!"));
+            return;
+        }
+        
+        // TODO: Implement with Hytale Location/Teleport API
+        // player.teleport(island.getVisitorSpawnLocation());
+        
+        player.sendMessage(Message.raw("§a§l✓ Visiting! §7Welcome to §e" + targetData.getUsername() + "'s §7island!"));
     }
     
     /**
      * Send help message
      */
-    private void sendHelp(Object player) { // Player player
-        /*
-        player.sendMessage("");
-        player.sendMessage("§6§l=== Island Commands ===");
-        player.sendMessage("§7/island create §8- Create your island");
-        player.sendMessage("§7/island home §8- Teleport to your island");
-        player.sendMessage("§7/island info §8- View island information");
-        player.sendMessage("§7/island invite <player> §8- Invite a member");
-        player.sendMessage("§7/island kick <player> §8- Kick a member");
-        player.sendMessage("§7/island upgrade §8- Upgrade your island");
-        player.sendMessage("§7/island delete §8- Delete your island");
-        player.sendMessage("");
-        */
+    private void sendHelp(Player player) {
+        player.sendMessage(Message.raw("§7§m─────────────────────────────"));
+        player.sendMessage(Message.raw("§6§lIsland Commands"));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§e/island §7- Teleport to your island"));
+        player.sendMessage(Message.raw("§e/island info §7- View island information"));
+        player.sendMessage(Message.raw("§e/island expand §7- Expand island size"));
+        player.sendMessage(Message.raw("§e/island slots §7- Upgrade generator slots"));
+        player.sendMessage(Message.raw("§e/island visit <player> §7- Visit an island"));
+        player.sendMessage(Message.raw("§e/island home §7- Return to your island"));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7Aliases: §e/is, /isle"));
+        player.sendMessage(Message.raw("§7§m─────────────────────────────"));
+    }
+    
+    /**
+     * Calculate island expand cost
+     */
+    private BigDecimal calculateExpandCost(int currentSize) {
+        // Formula: 10000 * (1.2 ^ (size/2))
+        double baseCost = 10000;
+        double multiplier = Math.pow(1.2, currentSize / 2.0);
+        return BigDecimal.valueOf(baseCost * multiplier);
+    }
+    
+    /**
+     * Calculate slot upgrade cost
+     */
+    private BigDecimal calculateSlotCost(int currentSlots) {
+        // Formula: 5000 * (1.15 ^ (slots/5))
+        double baseCost = 5000;
+        double multiplier = Math.pow(1.15, currentSlots / 5.0);
+        return BigDecimal.valueOf(baseCost * multiplier);
     }
 }
