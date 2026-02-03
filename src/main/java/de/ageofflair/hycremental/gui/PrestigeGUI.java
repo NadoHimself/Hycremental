@@ -1,15 +1,27 @@
 package de.ageofflair.hycremental.gui;
 
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+
 import de.ageofflair.hycremental.Hycremental;
 import de.ageofflair.hycremental.data.PlayerData;
 import de.ageofflair.hycremental.utils.NumberFormatter;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.UUID;
 
 /**
- * Prestige GUI - Preview and confirm prestige/ascension/rebirth
+ * Prestige GUI - Prestige/Ascension/Rebirth Preview
+ * 
+ * Uses Hytale's PageManager system for custom UI
+ * 
+ * TODO: Create UI file at Common/UI/Custom/prestige_gui.ui
+ * - Tabbed interface (Prestige, Ascension, Rebirth)
+ * - Preview of next level benefits
+ * - Cost display
+ * - Warning messages for resets
+ * - Confirmation buttons
  * 
  * @author Kielian (NadoHimself)
  * @version 1.0.0-ALPHA
@@ -17,7 +29,8 @@ import java.util.List;
 public class PrestigeGUI {
     
     private final Hycremental plugin;
-    private static final int GUI_SIZE = 45; // 5 rows
+    
+    private static final String PRESTIGE_PAGE_ID = "hycremental:prestige";
     
     public PrestigeGUI(Hycremental plugin) {
         this.plugin = plugin;
@@ -25,346 +38,197 @@ public class PrestigeGUI {
     
     /**
      * Open prestige menu
-     * @param player Player to open GUI for
      */
-    public void openPrestigeMenu(Object player) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(getPlayerUUID(player));
+    public void openPrestigeMenu(Player player) {
+        UUID uuid = player.getComponent(PlayerRef.class).getUuid();
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(uuid);
+        
         if (playerData == null) {
-            sendMessage(player, "§cError loading player data!");
+            player.sendMessage(Message.raw("§cError loading player data!"));
             return;
         }
         
-        // Create GUI
-        // TODO: GUI inventory = createInventory("§5§lProgression Menu", GUI_SIZE);
+        // TODO: Implement with Hytale PageManager API
+        // 
+        // Open custom prestige page with tabs:
+        // Map<String, Object> data = new HashMap<>();
+        // 
+        // Prestige Tab:
+        // data.put("current_prestige", playerData.getPrestigeLevel());
+        // data.put("next_prestige", playerData.getPrestigeLevel() + 1);
+        // data.put("prestige_cost", plugin.getPrestigeManager().calculatePrestigeCost(playerData.getPrestigeLevel()).toPlainString());
+        // data.put("current_multiplier", playerData.calculateTotalMultiplier());
+        // data.put("new_multiplier", (playerData.getPrestigeLevel() + 1) * 0.1 + 1.0);
+        // data.put("can_prestige", plugin.getPrestigeManager().canPrestige(playerData));
+        // 
+        // Ascension Tab:
+        // int requiredPrestige = 50 + (playerData.getAscensionLevel() * 50);
+        // data.put("current_ascension", playerData.getAscensionLevel());
+        // data.put("required_prestige", requiredPrestige);
+        // data.put("can_ascend", plugin.getPrestigeManager().canAscend(playerData));
+        // 
+        // Rebirth Tab:
+        // data.put("current_rebirth", playerData.getRebirthCount());
+        // data.put("required_ascension", 10);
+        // data.put("can_rebirth", plugin.getPrestigeManager().canRebirth(playerData));
+        // 
+        // player.getPageManager().openCustomPage(PageId.of(PRESTIGE_PAGE_ID), data);
         
-        // Current stats
-        addCurrentStats(null, 4, playerData);
-        
-        // Prestige option
-        addPrestigeOption(null, 20, playerData);
-        
-        // Ascension option
-        addAscensionOption(null, 22, playerData);
-        
-        // Rebirth option
-        addRebirthOption(null, 24, playerData);
-        
-        // Info/Help
-        addInfoItem(null, 40);
-        
-        // TODO: player.openInventory(inventory);
+        // Temporary fallback: Send text-based menu
+        sendTextBasedPrestigeMenu(player, playerData);
     }
     
     /**
-     * Add current stats display
+     * Open ascension menu
      */
-    private void addCurrentStats(Object inventory, int slot, PlayerData playerData) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.add("§7Current Progression:");
-        lore.add("");
-        lore.add("§8 • §7Prestige: §6" + playerData.getPrestigeLevel());
-        lore.add("§8 • §7Ascension: §5" + playerData.getAscensionLevel());
-        lore.add("§8 • §7Rebirth: §c" + playerData.getRebirthCount());
-        lore.add("");
-        lore.add("§7Total Multiplier: §e" + String.format("%.2f", playerData.calculateTotalMultiplier()) + "x");
-        lore.add("");
+    public void openAscensionMenu(Player player) {
+        UUID uuid = player.getComponent(PlayerRef.class).getUuid();
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(uuid);
         
-        // TODO: Create item (player head or beacon)
-        // meta.setDisplayName("§e§l" + playerData.getUsername());
-    }
-    
-    /**
-     * Add prestige option
-     */
-    private void addPrestigeOption(Object inventory, int slot, PlayerData playerData) {
-        List<String> lore = new ArrayList<>();
-        
-        int currentPrestige = playerData.getPrestigeLevel();
-        int nextPrestige = currentPrestige + 1;
-        
-        // Calculate prestige cost
-        BigDecimal cost = calculatePrestigeCost(currentPrestige);
-        boolean canAfford = playerData.hasEssence(cost);
-        
-        lore.add("");
-        lore.add("§7Current: §6Prestige " + currentPrestige);
-        lore.add("§7Next: §6Prestige " + nextPrestige);
-        lore.add("");
-        
-        // Show what will be reset
-        lore.add("§c§lWill Reset:");
-        lore.add("§8 • §cEssence Balance");
-        lore.add("§8 • §cGenerators (Tier 2+)");
-        lore.add("§8 • §cIsland Upgrades");
-        lore.add("");
-        
-        // Show what will be kept
-        lore.add("§a§lWill Keep:");
-        lore.add("§8 • §aPrestige Level");
-        lore.add("§8 • §aGems & Crystals");
-        lore.add("§8 • §aCosmetics & VIP");
-        lore.add("§8 • §aAchievements");
-        lore.add("");
-        
-        // Show rewards
-        lore.add("§e§lRewards:");
-        lore.add("§8 • §e+10% Global Multiplier");
-        
-        // Unlock new tiers
-        if (nextPrestige == 1) {
-            lore.add("§8 • §eUnlock Tier 4 Generators");
-        } else if (nextPrestige == 5) {
-            lore.add("§8 • §eUnlock Tier 5 Generators");
-        } else if (nextPrestige == 10) {
-            lore.add("§8 • §eUnlock Tier 6 Generators");
-            lore.add("§8 • §eUnlock Auto-Sell Feature");
-        } else if (nextPrestige == 50) {
-            lore.add("§8 • §eUnlock Tier 8 Generators");
-            lore.add("§8 • §eUnlock Ascension System");
+        if (playerData == null) {
+            return;
         }
         
-        lore.add("");
+        // TODO: Similar to prestige menu but focused on ascension tab
+        sendTextBasedAscensionMenu(player, playerData);
+    }
+    
+    /**
+     * Open rebirth menu
+     */
+    public void openRebirthMenu(Player player) {
+        UUID uuid = player.getComponent(PlayerRef.class).getUuid();
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(uuid);
         
-        // Cost
-        String costColor = canAfford ? "§a" : "§c";
-        lore.add("§7Required: " + costColor + NumberFormatter.format(cost) + " Essence");
-        lore.add("");
+        if (playerData == null) {
+            return;
+        }
         
-        if (canAfford) {
-            lore.add("§e§l» Click to prestige «");
+        // TODO: Similar to prestige menu but focused on rebirth tab with big warning
+        sendTextBasedRebirthMenu(player, playerData);
+    }
+    
+    /**
+     * Temporary text-based prestige menu
+     */
+    private void sendTextBasedPrestigeMenu(Player player, PlayerData playerData) {
+        BigDecimal cost = plugin.getPrestigeManager().calculatePrestigeCost(playerData.getPrestigeLevel());
+        boolean canPrestige = plugin.getPrestigeManager().canPrestige(playerData);
+        
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§6§l─────────────────────────────"));
+        player.sendMessage(Message.raw("§6§l       PRESTIGE"));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7Current Prestige: §6" + playerData.getPrestigeLevel()));
+        player.sendMessage(Message.raw("§7Next Prestige: §6" + (playerData.getPrestigeLevel() + 1)));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7Required Essence: " + (canPrestige ? "§a" : "§c") + NumberFormatter.format(cost)));
+        player.sendMessage(Message.raw("§7Your Essence: " + (canPrestige ? "§a" : "§c") + NumberFormatter.format(playerData.getEssence())));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7§lBenefits:"));
+        player.sendMessage(Message.raw("§8 • §7+10% Permanent Multiplier"));
+        player.sendMessage(Message.raw("§8 • §7Unlock higher tier generators"));
+        player.sendMessage(Message.raw("§8 • §7Better generator quality rates"));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7§lYou will lose:"));
+        player.sendMessage(Message.raw("§8 • §cAll Essence"));
+        player.sendMessage(Message.raw("§8 • §cTier 2+ Generators"));
+        player.sendMessage(Message.raw("§8 • §aTier 1 Generators kept"));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7Current Multiplier: §e" + String.format("%.2fx", playerData.calculateTotalMultiplier())));
+        player.sendMessage(Message.raw("§7New Multiplier: §a" + String.format("%.2fx", playerData.calculateTotalMultiplier() + 0.1)));
+        player.sendMessage(Message.raw(""));
+        
+        if (canPrestige) {
+            player.sendMessage(Message.raw("§a§lType /prestige confirm to prestige!"));
         } else {
-            lore.add("§c§l✘ Insufficient Essence");
+            player.sendMessage(Message.raw("§cYou need more Essence to prestige!"));
         }
         
-        // TODO: Create item (gold block or enchanted golden apple)
-        // meta.setDisplayName("§6§lPrestige");
+        player.sendMessage(Message.raw("§6§l─────────────────────────────"));
+        player.sendMessage(Message.raw(""));
     }
     
     /**
-     * Add ascension option
+     * Temporary text-based ascension menu
      */
-    private void addAscensionOption(Object inventory, int slot, PlayerData playerData) {
-        List<String> lore = new ArrayList<>();
+    private void sendTextBasedAscensionMenu(Player player, PlayerData playerData) {
+        int requiredPrestige = 50 + (playerData.getAscensionLevel() * 50);
+        boolean canAscend = plugin.getPrestigeManager().canAscend(playerData);
         
-        int currentAscension = playerData.getAscensionLevel();
-        int nextAscension = currentAscension + 1;
-        int requiredPrestige = 50 + (currentAscension * 50);
-        
-        boolean canAscend = playerData.getPrestigeLevel() >= requiredPrestige;
-        
-        lore.add("");
-        lore.add("§7Current: §5Ascension " + currentAscension);
-        lore.add("§7Next: §5Ascension " + nextAscension);
-        lore.add("");
-        
-        // Requirements
-        String reqColor = canAscend ? "§a" : "§c";
-        lore.add("§7Required: " + reqColor + "Prestige " + requiredPrestige);
-        lore.add("");
-        
-        // Show what will be reset
-        lore.add("§c§lWill Reset:");
-        lore.add("§8 • §cEverything from Prestige");
-        lore.add("");
-        
-        // Show what will be kept
-        lore.add("§a§lWill Keep:");
-        lore.add("§8 • §aAscension Level & Perks");
-        lore.add("§8 • §aGems & Crystals");
-        lore.add("§8 • §aCosmetics & VIP");
-        lore.add("");
-        
-        // Show rewards
-        lore.add("§d§lRewards:");
-        lore.add("§8 • §d1 Ascension Point");
-        lore.add("§8 • §dUnlock Ascension Perks");
-        lore.add("§8 • §d+50% Permanent Multiplier");
-        lore.add("");
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§5§l─────────────────────────────"));
+        player.sendMessage(Message.raw("§5§l     ★ ASCENSION ★"));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7Current Ascension: §5" + playerData.getAscensionLevel()));
+        player.sendMessage(Message.raw("§7Next Ascension: §5" + (playerData.getAscensionLevel() + 1)));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7Required Prestige: " + (canAscend ? "§a" : "§c") + requiredPrestige));
+        player.sendMessage(Message.raw("§7Your Prestige: " + (canAscend ? "§a" : "§c") + playerData.getPrestigeLevel()));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7§lBenefits:"));
+        player.sendMessage(Message.raw("§8 • §d+50% Permanent Multiplier"));
+        player.sendMessage(Message.raw("§8 • §dMassive production boost"));
+        player.sendMessage(Message.raw("§8 • §dSpecial ascension perks"));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7§lYou will lose:"));
+        player.sendMessage(Message.raw("§8 • §cAll Prestige Levels (reset to 0)"));
+        player.sendMessage(Message.raw("§8 • §cAll Essence"));
+        player.sendMessage(Message.raw("§8 • §cALL Generators"));
+        player.sendMessage(Message.raw(""));
         
         if (canAscend) {
-            lore.add("§d§l» Click to ascend «");
+            player.sendMessage(Message.raw("§d§lType /ascend confirm to ascend!"));
         } else {
-            lore.add("§c§l✘ Requirement not met");
+            player.sendMessage(Message.raw("§cYou need Prestige " + requiredPrestige + " to ascend!"));
         }
         
-        // TODO: Create item (nether star or beacon)
-        // meta.setDisplayName("§5§lAscension");
+        player.sendMessage(Message.raw("§5§l─────────────────────────────"));
+        player.sendMessage(Message.raw(""));
     }
     
     /**
-     * Add rebirth option
+     * Temporary text-based rebirth menu
      */
-    private void addRebirthOption(Object inventory, int slot, PlayerData playerData) {
-        List<String> lore = new ArrayList<>();
+    private void sendTextBasedRebirthMenu(Player player, PlayerData playerData) {
+        boolean canRebirth = plugin.getPrestigeManager().canRebirth(playerData);
         
-        int currentRebirth = playerData.getRebirthCount();
-        int nextRebirth = currentRebirth + 1;
-        int requiredAscension = 10;
-        
-        boolean canRebirth = playerData.getAscensionLevel() >= requiredAscension;
-        
-        lore.add("");
-        lore.add("§7Current: §cRebirth " + currentRebirth);
-        lore.add("§7Next: §cRebirth " + nextRebirth);
-        lore.add("");
-        
-        // Requirements
-        String reqColor = canRebirth ? "§a" : "§c";
-        lore.add("§7Required: " + reqColor + "Ascension " + requiredAscension);
-        lore.add("");
-        
-        // Show what will be reset
-        lore.add("§c§lWill Reset:");
-        lore.add("§8 • §cABSOLUTELY EVERYTHING");
-        lore.add("§8 • §cPrestige Level → 0");
-        lore.add("§8 • §cAscension Level → 0");
-        lore.add("§8 • §cAll Currency");
-        lore.add("");
-        
-        // Show what will be kept
-        lore.add("§a§lWill Keep:");
-        lore.add("§8 • §aRebirth Count");
-        lore.add("§8 • §aCosmetics & VIP");
-        lore.add("");
-        
-        // Show rewards
-        lore.add("§c§lRewards:");
-        lore.add("§8 • §c1 Rebirth Token");
-        lore.add("§8 • §c2x ALL Essence (Permanent)");
-        lore.add("§8 • §cGame-Breaking Bonuses");
-        lore.add("");
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§c§l─────────────────────────────"));
+        player.sendMessage(Message.raw("§c§l    ✦ REBIRTH WARNING ✦"));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§c§lTHIS WILL RESET EVERYTHING!"));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7Current Rebirth: §c" + playerData.getRebirthCount()));
+        player.sendMessage(Message.raw("§7Next Rebirth: §c" + (playerData.getRebirthCount() + 1)));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7Required Ascension: " + (canRebirth ? "§a" : "§c") + "10"));
+        player.sendMessage(Message.raw("§7Your Ascension: " + (canRebirth ? "§a" : "§c") + playerData.getAscensionLevel()));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7§lBenefits:"));
+        player.sendMessage(Message.raw("§8 • §c2x ALL Essence (Permanent)"));
+        player.sendMessage(Message.raw("§8 • §cGame-breaking multiplier"));
+        player.sendMessage(Message.raw("§8 • §cUltimate prestige status"));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7§lYou will lose:"));
+        player.sendMessage(Message.raw("§8 • §cALL Prestige Levels (reset to 0)"));
+        player.sendMessage(Message.raw("§8 • §cALL Ascension Levels (reset to 0)"));
+        player.sendMessage(Message.raw("§8 • §cALL Essence"));
+        player.sendMessage(Message.raw("§8 • §cALL Generators"));
+        player.sendMessage(Message.raw("§8 • §cIsland size reset to 20x20"));
+        player.sendMessage(Message.raw("§8 • §cGenerator slots reset to 10"));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7Current Total Multiplier: §e" + String.format("%.2fx", playerData.calculateTotalMultiplier())));
+        player.sendMessage(Message.raw("§7After Rebirth: §c" + String.format("%.2fx", (playerData.getRebirthCount() + 1) * 2.0)));
+        player.sendMessage(Message.raw(""));
         
         if (canRebirth) {
-            lore.add("§c§l❗ WARNING: THIS IS PERMANENT!");
-            lore.add("§c§l» Click to rebirth «");
+            player.sendMessage(Message.raw("§c§lType /rebirth confirm if you're SURE!"));
         } else {
-            lore.add("§c§l✘ Requirement not met");
+            player.sendMessage(Message.raw("§cYou need Ascension 10 to rebirth!"));
         }
         
-        // TODO: Create item (dragon egg or totem)
-        // meta.setDisplayName("§c§lRebirth");
-    }
-    
-    /**
-     * Add info item
-     */
-    private void addInfoItem(Object inventory, int slot) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.add("§7§lProgression Guide:");
-        lore.add("");
-        lore.add("§6Prestige §7- Reset to gain multipliers");
-        lore.add("§7 and unlock new generator tiers.");
-        lore.add("");
-        lore.add("§5Ascension §7- Reset everything for");
-        lore.add("§7 permanent perks and massive boosts.");
-        lore.add("");
-        lore.add("§cRebirth §7- Complete reset for");
-        lore.add("§7 game-breaking bonuses. Ultimate power!");
-        lore.add("");
-        
-        // TODO: Create item (book or knowledge book)
-        // meta.setDisplayName("§e§lProgression Info");
-    }
-    
-    /**
-     * Handle prestige GUI click
-     */
-    public void handleClick(Object player, int slot) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(getPlayerUUID(player));
-        if (playerData == null) return;
-        
-        switch (slot) {
-            case 20: // Prestige
-                openPrestigeConfirmation(player, playerData);
-                break;
-                
-            case 22: // Ascension
-                openAscensionConfirmation(player, playerData);
-                break;
-                
-            case 24: // Rebirth
-                openRebirthConfirmation(player, playerData);
-                break;
-        }
-    }
-    
-    /**
-     * Open prestige confirmation
-     */
-    private void openPrestigeConfirmation(Object player, PlayerData playerData) {
-        BigDecimal cost = calculatePrestigeCost(playerData.getPrestigeLevel());
-        
-        if (!playerData.hasEssence(cost)) {
-            sendMessage(player, "§cYou need " + NumberFormatter.format(cost) + " Essence to prestige!");
-            playSound(player, "ERROR");
-            return;
-        }
-        
-        // TODO: Open confirmation GUI with confirm/cancel buttons
-        sendMessage(player, "§eType /prestige confirm to confirm your prestige!");
-        closeGUI(player);
-    }
-    
-    /**
-     * Open ascension confirmation
-     */
-    private void openAscensionConfirmation(Object player, PlayerData playerData) {
-        int requiredPrestige = 50 + (playerData.getAscensionLevel() * 50);
-        
-        if (playerData.getPrestigeLevel() < requiredPrestige) {
-            sendMessage(player, "§cYou need Prestige " + requiredPrestige + " to ascend!");
-            playSound(player, "ERROR");
-            return;
-        }
-        
-        // TODO: Open confirmation GUI
-        sendMessage(player, "§dType /ascend confirm to confirm your ascension!");
-        closeGUI(player);
-    }
-    
-    /**
-     * Open rebirth confirmation
-     */
-    private void openRebirthConfirmation(Object player, PlayerData playerData) {
-        if (playerData.getAscensionLevel() < 10) {
-            sendMessage(player, "§cYou need Ascension 10 to rebirth!");
-            playSound(player, "ERROR");
-            return;
-        }
-        
-        // TODO: Open confirmation GUI
-        sendMessage(player, "§c§lWARNING: §7Type /rebirth confirm to confirm your rebirth!");
-        sendMessage(player, "§cThis will reset EVERYTHING!");
-        closeGUI(player);
-    }
-    
-    /**
-     * Calculate prestige cost
-     */
-    private BigDecimal calculatePrestigeCost(int currentPrestige) {
-        // Formula: 1M * (1.5 ^ prestige)
-        double baseCost = 1_000_000;
-        double multiplier = Math.pow(1.5, currentPrestige);
-        return BigDecimal.valueOf(baseCost * multiplier);
-    }
-    
-    // Utility methods
-    
-    private Object getPlayerUUID(Object player) {
-        return null; // TODO
-    }
-    
-    private void sendMessage(Object player, String message) {
-        plugin.getLogger().info("[GUI] " + message);
-    }
-    
-    private void playSound(Object player, String sound) {
-        // TODO
-    }
-    
-    private void closeGUI(Object player) {
-        // TODO: player.closeInventory();
+        player.sendMessage(Message.raw("§c§l─────────────────────────────"));
+        player.sendMessage(Message.raw(""));
     }
 }
