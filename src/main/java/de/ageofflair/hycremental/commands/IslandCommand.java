@@ -1,24 +1,21 @@
 package de.ageofflair.hycremental.commands;
 
-import com.hypixel.hytale.server.core.Message;
-import com.hypixel.hytale.server.core.command.CommandBase;
-import com.hypixel.hytale.server.core.command.CommandContext;
+import com.hypixel.hytale.server.core.command.Command;
+import com.hypixel.hytale.server.core.command.CommandSender;
+import com.hypixel.hytale.server.core.universe.message.Message;
 
 import javax.annotation.Nonnull;
 
-/**
- * Command to manage player islands.
- * Allows teleportation and island management.
- */
-public class IslandCommand extends CommandBase {
-    
-    public IslandCommand() {
-        super("island", "hycremental.commands.island.description");
-    }
-    
+public class IslandCommand implements Command {
+
+    @Nonnull
     @Override
-    protected void executeSync(@Nonnull CommandContext context) {
-        // TODO: Implement island management
-        context.sendMessage(Message.raw("§aIsland command - Coming soon!"));
+    public String getName() {
+        return "island";
+    }
+
+    @Override
+    public void execute(@Nonnull CommandSender sender, @Nonnull String[] args) {
+        sender.sendMessage(Message.raw("Island command executed! (Not yet implemented)"));
     }
 }

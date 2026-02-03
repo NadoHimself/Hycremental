@@ -1,24 +1,21 @@
 package de.ageofflair.hycremental.commands;
 
-import com.hypixel.hytale.server.core.Message;
-import com.hypixel.hytale.server.core.command.CommandBase;
-import com.hypixel.hytale.server.core.command.CommandContext;
+import com.hypixel.hytale.server.core.command.Command;
+import com.hypixel.hytale.server.core.command.CommandSender;
+import com.hypixel.hytale.server.core.universe.message.Message;
 
 import javax.annotation.Nonnull;
 
-/**
- * Command to manage generators.
- * Allows players to view and upgrade their generators.
- */
-public class GeneratorCommand extends CommandBase {
-    
-    public GeneratorCommand() {
-        super("generator", "hycremental.commands.generator.description");
-    }
-    
+public class GeneratorCommand implements Command {
+
+    @Nonnull
     @Override
-    protected void executeSync(@Nonnull CommandContext context) {
-        // TODO: Implement generator management
-        context.sendMessage(Message.raw("§aGenerator command - Coming soon!"));
+    public String getName() {
+        return "generator";
+    }
+
+    @Override
+    public void execute(@Nonnull CommandSender sender, @Nonnull String[] args) {
+        sender.sendMessage(Message.raw("Generator command executed! (Not yet implemented)"));
     }
 }

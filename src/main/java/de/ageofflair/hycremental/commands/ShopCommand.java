@@ -1,24 +1,21 @@
 package de.ageofflair.hycremental.commands;
 
-import com.hypixel.hytale.server.core.Message;
-import com.hypixel.hytale.server.core.command.CommandBase;
-import com.hypixel.hytale.server.core.command.CommandContext;
+import com.hypixel.hytale.server.core.command.Command;
+import com.hypixel.hytale.server.core.command.CommandSender;
+import com.hypixel.hytale.server.core.universe.message.Message;
 
 import javax.annotation.Nonnull;
 
-/**
- * Command to open the shop UI for players.
- * Allows players to spend essence on various upgrades and items.
- */
-public class ShopCommand extends CommandBase {
-    
-    public ShopCommand() {
-        super("shop", "hycremental.commands.shop.description");
-    }
-    
+public class ShopCommand implements Command {
+
+    @Nonnull
     @Override
-    protected void executeSync(@Nonnull CommandContext context) {
-        // TODO: Implement shop UI opening
-        context.sendMessage(Message.raw("§aShop command - Coming soon!"));
+    public String getName() {
+        return "shop";
+    }
+
+    @Override
+    public void execute(@Nonnull CommandSender sender, @Nonnull String[] args) {
+        sender.sendMessage(Message.raw("Shop command executed! (Not yet implemented)"));
     }
 }
