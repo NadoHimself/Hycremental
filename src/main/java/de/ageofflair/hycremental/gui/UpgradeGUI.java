@@ -1,18 +1,29 @@
 package de.ageofflair.hycremental.gui;
 
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+
 import de.ageofflair.hycremental.Hycremental;
 import de.ageofflair.hycremental.data.PlayerData;
 import de.ageofflair.hycremental.generators.Generator;
-import de.ageofflair.hycremental.generators.GeneratorQuality;
 import de.ageofflair.hycremental.generators.GeneratorEnchantment;
 import de.ageofflair.hycremental.utils.NumberFormatter;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.UUID;
 
 /**
- * Upgrade GUI - Interface for upgrading generators
+ * Upgrade GUI - Generator Upgrade Interface
+ * 
+ * Uses Hytale's PageManager system for custom UI
+ * 
+ * TODO: Create UI file at Common/UI/Custom/upgrade_gui.ui
+ * - Generator info display (type, level, quality, production)
+ * - Upgrade button with cost
+ * - Enchantment slots (up to 5)
+ * - Progress bars for upgrade levels
+ * - Back button to close
  * 
  * @author Kielian (NadoHimself)
  * @version 1.0.0-ALPHA
@@ -20,7 +31,8 @@ import java.util.List;
 public class UpgradeGUI {
     
     private final Hycremental plugin;
-    private static final int GUI_SIZE = 45; // 5 rows
+    
+    private static final String UPGRADE_PAGE_ID = "hycremental:upgrade";
     
     public UpgradeGUI(Hycremental plugin) {
         this.plugin = plugin;
@@ -28,358 +40,195 @@ public class UpgradeGUI {
     
     /**
      * Open upgrade GUI for generator
-     * @param player Player to open GUI for
-     * @param generator Generator to upgrade
      */
-    public void openUpgradeGUI(Object player, Generator generator) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(getPlayerUUID(player));
+    public void openUpgradeGUI(Player player, Generator generator) {
+        UUID uuid = player.getComponent(PlayerRef.class).getUuid();
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(uuid);
+        
         if (playerData == null) {
-            sendMessage(player, "§cError loading player data!");
+            player.sendMessage(Message.raw("§cError loading player data!"));
             return;
         }
         
-        // Create GUI
-        // TODO: GUI inventory = createInventory("§6§lUpgrade Generator", GUI_SIZE);
+        // Check ownership
+        if (!generator.getOwnerUUID().equals(uuid)) {
+            player.sendMessage(Message.raw("§cYou don't own this generator!"));
+            return;
+        }
         
-        // Generator info item
-        addGeneratorInfo(null, 4, generator);
+        // TODO: Implement with Hytale PageManager API
+        // 
+        // Open custom upgrade page:
+        // Map<String, Object> data = new HashMap<>();
+        // data.put("generator_id", generator.getUuid());
+        // data.put("generator_type", generator.getType().getDisplayName());
+        // data.put("generator_level", generator.getLevel());
+        // data.put("generator_quality", generator.getQuality().getDisplayName());
+        // data.put("upgrade_cost", generator.calculateUpgradeCost().toPlainString());
+        // 
+        // player.getPageManager().openCustomPage(PageId.of(UPGRADE_PAGE_ID), data);
+        // 
+        // The upgrade_gui.ui file should contain:
+        // - Generator 3D model/icon preview
+        // - Stats display (level, quality, production)
+        // - Upgrade button (level +1)
+        // - Enchantment application slots
+        // - Progress bar showing level/100
         
-        // Level upgrade
-        addLevelUpgrade(null, 20, generator, playerData);
-        
-        // Quality upgrade
-        addQualityUpgrade(null, 22, generator, playerData);
-        
-        // Enchantment menu
-        addEnchantmentMenu(null, 24, generator, playerData);
-        
-        // Max level button
-        addMaxLevelButton(null, 29, generator, playerData);
-        
-        // Sell generator
-        addSellButton(null, 33, generator, playerData);
-        
-        // Back button
-        addBackButton(null, 40);
-        
-        // Open GUI
-        // TODO: player.openInventory(inventory);
+        // Temporary fallback: Send text-based upgrade menu
+        sendTextBasedUpgradeMenu(player, generator, playerData);
     }
     
     /**
-     * Add generator info display
+     * Handle level upgrade (called from UI button click)
      */
-    private void addGeneratorInfo(Object inventory, int slot, Generator generator) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.add("§7Type: §e" + generator.getType().getDisplayName());
-        lore.add("§7Tier: §e" + generator.getType().getTier());
-        lore.add("");
-        lore.add("§7Level: §a" + generator.getLevel() + "§7/§a100");
-        lore.add("§7Quality: " + generator.getQuality().getColor() + generator.getQuality().getDisplayName());
-        lore.add("");
-        lore.add("§7Base Production: §a" + NumberFormatter.format(generator.getType().getBaseProduction()) + " Essence/s");
-        lore.add("§7Current Production: §a" + NumberFormatter.format(generator.calculateProduction()) + " Essence/s");
-        lore.add("");
+    public void handleLevelUpgrade(Player player, Generator generator) {
+        UUID uuid = player.getComponent(PlayerRef.class).getUuid();
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(uuid);
         
-        // Enchantments
-        if (!generator.getEnchantments().isEmpty()) {
-            lore.add("§7Enchantments:");
-            for (GeneratorEnchantment ench : generator.getEnchantments()) {
-                lore.add("§8 • " + ench.getColor() + ench.getDisplayName());
+        if (playerData == null) {
+            return;
+        }
+        
+        // Check if max level
+        if (generator.getLevel() >= 100) {
+            player.sendMessage(Message.raw("§cGenerator is already max level!"));
+            return;
+        }
+        
+        // Calculate cost
+        BigDecimal cost = generator.calculateUpgradeCost();
+        
+        // Check if player has enough
+        if (!playerData.hasEssence(cost)) {
+            player.sendMessage(Message.raw("§cInsufficient Essence!"));
+            player.sendMessage(Message.raw("§7Need: §a" + NumberFormatter.format(cost)));
+            return;
+        }
+        
+        // Process upgrade
+        playerData.removeEssence(cost);
+        generator.levelUp();
+        
+        // Save
+        plugin.getPlayerDataManager().savePlayerData(playerData);
+        
+        // Success feedback
+        player.sendMessage(Message.raw("§a§l✓ Upgraded! §7Level " + generator.getLevel()));
+        player.sendMessage(Message.raw("§7New Production: §a" + NumberFormatter.format(generator.calculateProduction()) + " Essence/s"));
+        
+        // TODO: Play upgrade sound
+        // TODO: Particle effect at generator location
+        
+        // Refresh GUI
+        openUpgradeGUI(player, generator);
+    }
+    
+    /**
+     * Handle enchantment application (called from UI)
+     */
+    public void handleEnchantmentApplication(Player player, Generator generator, GeneratorEnchantment enchantment) {
+        UUID uuid = player.getComponent(PlayerRef.class).getUuid();
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(uuid);
+        
+        if (playerData == null) {
+            return;
+        }
+        
+        // Check max enchantments
+        if (generator.getEnchantments().size() >= 5) {
+            player.sendMessage(Message.raw("§cGenerator has maximum enchantments!"));
+            return;
+        }
+        
+        // Check if already has this enchantment
+        if (generator.hasEnchantment(enchantment)) {
+            // Upgrade enchantment level
+            int currentLevel = generator.getEnchantmentLevel(enchantment);
+            
+            if (currentLevel >= 10) {
+                player.sendMessage(Message.raw("§cEnchantment is already max level!"));
+                return;
             }
-        }
-        
-        // TODO: Create item and add to inventory
-    }
-    
-    /**
-     * Add level upgrade button
-     */
-    private void addLevelUpgrade(Object inventory, int slot, Generator generator, PlayerData playerData) {
-        List<String> lore = new ArrayList<>();
-        
-        int currentLevel = generator.getLevel();
-        int maxLevel = 100;
-        
-        if (currentLevel >= maxLevel) {
-            lore.add("");
-            lore.add("§c§lMAX LEVEL REACHED");
-            lore.add("");
-            // TODO: Add item with barrier material
-            return;
-        }
-        
-        BigDecimal cost = generator.calculateLevelUpgradeCost();
-        boolean canAfford = playerData.hasEssence(cost);
-        
-        lore.add("");
-        lore.add("§7Current Level: §a" + currentLevel);
-        lore.add("§7Next Level: §a" + (currentLevel + 1));
-        lore.add("");
-        lore.add("§7Production Boost: §e+5%");
-        lore.add("");
-        String costColor = canAfford ? "§a" : "§c";
-        lore.add("§7Cost: " + costColor + NumberFormatter.format(cost) + " Essence");
-        lore.add("");
-        
-        if (canAfford) {
-            lore.add("§e§l» Left-Click to upgrade +1 «");
-            lore.add("§e§l» Right-Click to upgrade +10 «");
+            
+            BigDecimal cost = calculateEnchantmentUpgradeCost(enchantment, currentLevel);
+            
+            if (!playerData.hasEssence(cost)) {
+                player.sendMessage(Message.raw("§cInsufficient Essence!"));
+                return;
+            }
+            
+            playerData.removeEssence(cost);
+            generator.upgradeEnchantment(enchantment);
+            
+            player.sendMessage(Message.raw("§a§l✓ Upgraded! " + enchantment.getColor() + enchantment.getDisplayName() + " " + (currentLevel + 1)));
+            
         } else {
-            lore.add("§c§l✘ Insufficient Essence");
+            // Add new enchantment
+            BigDecimal cost = enchantment.getBaseCost();
+            
+            if (!playerData.hasEssence(cost)) {
+                player.sendMessage(Message.raw("§cInsufficient Essence!"));
+                return;
+            }
+            
+            playerData.removeEssence(cost);
+            generator.addEnchantment(enchantment, 1);
+            
+            player.sendMessage(Message.raw("§a§l✓ Applied! " + enchantment.getColor() + enchantment.getDisplayName() + " I"));
         }
         
-        // TODO: Create item (experience bottle or similar)
+        // Save
+        plugin.getPlayerDataManager().savePlayerData(playerData);
+        
+        // Refresh GUI
+        openUpgradeGUI(player, generator);
     }
     
     /**
-     * Add quality upgrade button
+     * Calculate enchantment upgrade cost
      */
-    private void addQualityUpgrade(Object inventory, int slot, Generator generator, PlayerData playerData) {
-        List<String> lore = new ArrayList<>();
+    private BigDecimal calculateEnchantmentUpgradeCost(GeneratorEnchantment enchantment, int currentLevel) {
+        double baseCost = enchantment.getBaseCost().doubleValue();
+        double multiplier = Math.pow(1.5, currentLevel);
+        return BigDecimal.valueOf(baseCost * multiplier);
+    }
+    
+    /**
+     * Temporary text-based upgrade menu
+     */
+    private void sendTextBasedUpgradeMenu(Player player, Generator generator, PlayerData playerData) {
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§6§l─────────────────────────────"));
+        player.sendMessage(Message.raw("§6§l    Generator Upgrade"));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7Type: " + generator.getType().getDisplayName()));
+        player.sendMessage(Message.raw("§7Level: §a" + generator.getLevel() + "§7/§a100"));
+        player.sendMessage(Message.raw("§7Quality: " + generator.getQuality().getColor() + generator.getQuality().getDisplayName()));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7Production: §a" + NumberFormatter.format(generator.calculateProduction()) + " Essence/s"));
+        player.sendMessage(Message.raw(""));
         
-        GeneratorQuality currentQuality = generator.getQuality();
-        GeneratorQuality nextQuality = currentQuality.getNext();
-        
-        if (nextQuality == null) {
-            lore.add("");
-            lore.add("§d§lLEGENDARY QUALITY");
-            lore.add("§7Already at maximum quality!");
-            lore.add("");
-            // TODO: Add item with nether star
-            return;
-        }
-        
-        BigDecimal cost = generator.calculateQualityUpgradeCost();
-        boolean canAfford = playerData.hasEssence(cost);
-        
-        lore.add("");
-        lore.add("§7Current: " + currentQuality.getColor() + currentQuality.getDisplayName() + "§7 (" + currentQuality.getMultiplier() + "x)");
-        lore.add("§7Next: " + nextQuality.getColor() + nextQuality.getDisplayName() + "§7 (" + nextQuality.getMultiplier() + "x)");
-        lore.add("");
-        lore.add("§7Production Multiplier: " + nextQuality.getColor() + nextQuality.getMultiplier() + "x");
-        lore.add("");
-        String costColor = canAfford ? "§a" : "§c";
-        lore.add("§7Cost: " + costColor + NumberFormatter.format(cost) + " Essence");
-        lore.add("");
-        
-        if (canAfford) {
-            lore.add("§e§l» Click to upgrade quality «");
+        if (generator.getLevel() < 100) {
+            BigDecimal upgradeCost = generator.calculateUpgradeCost();
+            player.sendMessage(Message.raw("§e[Upgrade to Level " + (generator.getLevel() + 1) + "]"));
+            player.sendMessage(Message.raw("§7Cost: §a" + NumberFormatter.format(upgradeCost)));
         } else {
-            lore.add("§c§l✘ Insufficient Essence");
+            player.sendMessage(Message.raw("§a§lMAX LEVEL!"));
         }
         
-        // TODO: Create item (diamond or emerald)
-    }
-    
-    /**
-     * Add enchantment menu button
-     */
-    private void addEnchantmentMenu(Object inventory, int slot, Generator generator, PlayerData playerData) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.add("§7Current Enchantments: §e" + generator.getEnchantments().size() + "§7/§e3");
-        lore.add("");
+        player.sendMessage(Message.raw(""));
         
         if (!generator.getEnchantments().isEmpty()) {
-            for (GeneratorEnchantment ench : generator.getEnchantments()) {
-                lore.add("§8 • " + ench.getColor() + ench.getDisplayName());
-            }
-            lore.add("");
+            player.sendMessage(Message.raw("§7Enchantments:"));
+            generator.getEnchantments().forEach((enchant, level) -> {
+                player.sendMessage(Message.raw("§8 • " + enchant.getColor() + enchant.getDisplayName() + " " + level));
+            });
+            player.sendMessage(Message.raw(""));
         }
         
-        lore.add("§e§l» Click to manage enchantments «");
-        
-        // TODO: Create item (enchanted book)
-    }
-    
-    /**
-     * Add max level button
-     */
-    private void addMaxLevelButton(Object inventory, int slot, Generator generator, PlayerData playerData) {
-        List<String> lore = new ArrayList<>();
-        
-        int currentLevel = generator.getLevel();
-        int levelsToMax = 100 - currentLevel;
-        
-        if (levelsToMax <= 0) {
-            return; // Already max level
-        }
-        
-        BigDecimal totalCost = generator.calculateMaxLevelCost();
-        boolean canAfford = playerData.hasEssence(totalCost);
-        
-        lore.add("");
-        lore.add("§7Upgrade to Level 100");
-        lore.add("§7Levels to upgrade: §e" + levelsToMax);
-        lore.add("");
-        String costColor = canAfford ? "§a" : "§c";
-        lore.add("§7Total Cost: " + costColor + NumberFormatter.format(totalCost) + " Essence");
-        lore.add("");
-        
-        if (canAfford) {
-            lore.add("§e§l» Click to max level «");
-        } else {
-            lore.add("§c§l✘ Insufficient Essence");
-        }
-        
-        // TODO: Create item (golden apple)
-    }
-    
-    /**
-     * Add sell generator button
-     */
-    private void addSellButton(Object inventory, int slot, Generator generator, PlayerData playerData) {
-        List<String> lore = new ArrayList<>();
-        
-        BigDecimal sellPrice = generator.calculateSellPrice();
-        
-        lore.add("");
-        lore.add("§7Sell this generator for:");
-        lore.add("§a" + NumberFormatter.format(sellPrice) + " Essence");
-        lore.add("");
-        lore.add("§c§lWARNING: This cannot be undone!");
-        lore.add("");
-        lore.add("§c§l» Click to sell «");
-        
-        // TODO: Create item (red concrete or TNT)
-    }
-    
-    /**
-     * Add back button
-     */
-    private void addBackButton(Object inventory, int slot) {
-        // TODO: Create back arrow item
-    }
-    
-    /**
-     * Handle upgrade click
-     */
-    public void handleClick(Object player, int slot, Generator generator, boolean isLeftClick) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(getPlayerUUID(player));
-        if (playerData == null) return;
-        
-        switch (slot) {
-            case 20: // Level upgrade
-                int levels = isLeftClick ? 1 : 10;
-                upgradeLevels(player, generator, playerData, levels);
-                break;
-                
-            case 22: // Quality upgrade
-                upgradeQuality(player, generator, playerData);
-                break;
-                
-            case 24: // Enchantments
-                openEnchantmentMenu(player, generator);
-                break;
-                
-            case 29: // Max level
-                maxLevel(player, generator, playerData);
-                break;
-                
-            case 33: // Sell
-                sellGenerator(player, generator, playerData);
-                break;
-                
-            case 40: // Back
-                closeGUI(player);
-                break;
-        }
-    }
-    
-    private void upgradeLevels(Object player, Generator generator, PlayerData playerData, int levels) {
-        BigDecimal cost = generator.calculateLevelUpgradeCost(levels);
-        
-        if (!playerData.hasEssence(cost)) {
-            sendMessage(player, "§cInsufficient Essence!");
-            playSound(player, "ERROR");
-            return;
-        }
-        
-        playerData.removeEssence(cost);
-        generator.addLevels(levels);
-        
-        sendMessage(player, "§a§lUpgraded! §7Now level " + generator.getLevel());
-        playSound(player, "SUCCESS");
-        
-        openUpgradeGUI(player, generator);
-    }
-    
-    private void upgradeQuality(Object player, Generator generator, PlayerData playerData) {
-        BigDecimal cost = generator.calculateQualityUpgradeCost();
-        
-        if (!playerData.hasEssence(cost)) {
-            sendMessage(player, "§cInsufficient Essence!");
-            playSound(player, "ERROR");
-            return;
-        }
-        
-        GeneratorQuality newQuality = generator.getQuality().getNext();
-        if (newQuality == null) {
-            sendMessage(player, "§cAlready at maximum quality!");
-            return;
-        }
-        
-        playerData.removeEssence(cost);
-        generator.setQuality(newQuality);
-        
-        sendMessage(player, "§a§lQuality Upgraded! §7Now " + newQuality.getColor() + newQuality.getDisplayName());
-        playSound(player, "SUCCESS");
-        
-        openUpgradeGUI(player, generator);
-    }
-    
-    private void maxLevel(Object player, Generator generator, PlayerData playerData) {
-        BigDecimal cost = generator.calculateMaxLevelCost();
-        
-        if (!playerData.hasEssence(cost)) {
-            sendMessage(player, "§cInsufficient Essence!");
-            playSound(player, "ERROR");
-            return;
-        }
-        
-        playerData.removeEssence(cost);
-        generator.setLevel(100);
-        
-        sendMessage(player, "§a§lMAX LEVEL! §7Generator is now level 100");
-        playSound(player, "LEVELUP");
-        
-        openUpgradeGUI(player, generator);
-    }
-    
-    private void sellGenerator(Object player, Generator generator, PlayerData playerData) {
-        BigDecimal sellPrice = generator.calculateSellPrice();
-        
-        playerData.addEssence(sellPrice);
-        plugin.getGeneratorManager().removeGenerator(generator);
-        
-        sendMessage(player, "§a§lSold! §7Received " + NumberFormatter.format(sellPrice) + " Essence");
-        playSound(player, "SUCCESS");
-        
-        closeGUI(player);
-    }
-    
-    private void openEnchantmentMenu(Object player, Generator generator) {
-        // TODO: Open enchantment sub-menu
-        sendMessage(player, "§7Enchantment menu coming soon!");
-    }
-    
-    // Utility methods
-    
-    private Object getPlayerUUID(Object player) {
-        return null; // TODO
-    }
-    
-    private void sendMessage(Object player, String message) {
-        plugin.getLogger().info("[GUI] " + message);
-    }
-    
-    private void playSound(Object player, String sound) {
-        // TODO
-    }
-    
-    private void closeGUI(Object player) {
-        // TODO: player.closeInventory();
+        player.sendMessage(Message.raw("§7Right-click generator to open full upgrade GUI"));
+        player.sendMessage(Message.raw("§6§l─────────────────────────────"));
+        player.sendMessage(Message.raw(""));
     }
 }
