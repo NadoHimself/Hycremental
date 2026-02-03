@@ -19,6 +19,9 @@
 *.tar.gz
 *.rar
 
+# BUT: Allow dependency JARs in libs folder!
+!libs/*.jar
+
 # Virtual machine crash logs
 hs_err_pid*
 replay_pid*
