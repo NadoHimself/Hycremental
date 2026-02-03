@@ -1,16 +1,28 @@
 package de.ageofflair.hycremental.gui;
 
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+
 import de.ageofflair.hycremental.Hycremental;
 import de.ageofflair.hycremental.data.PlayerData;
 import de.ageofflair.hycremental.generators.GeneratorType;
 import de.ageofflair.hycremental.utils.NumberFormatter;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.UUID;
+import java.util.logging.Level;
 
 /**
- * Shop GUI - Interface for purchasing generators
+ * Shop GUI - Generator Shop Interface
+ * 
+ * Uses Hytale's PageManager system for custom UI
+ * 
+ * TODO: Create UI file at Common/UI/Custom/shop_gui.ui
+ * - Grid layout with generator icons
+ * - Price display under each generator
+ * - Lock icon for locked generators (prestige requirement)
+ * - Click handler for purchases
  * 
  * @author Kielian (NadoHimself)
  * @version 1.0.0-ALPHA
@@ -18,223 +30,136 @@ import java.util.List;
 public class ShopGUI {
     
     private final Hycremental plugin;
-    private static final int GUI_SIZE = 54; // 6 rows
+    
+    // Page IDs for Hytale UI system
+    private static final String SHOP_PAGE_ID = "hycremental:shop";
     
     public ShopGUI(Hycremental plugin) {
         this.plugin = plugin;
     }
     
     /**
-     * Open shop GUI for player
-     * @param player Player to open GUI for
+     * Open shop for player
      */
-    public void openShop(Object player) {
-        // TODO: Implement with Hytale GUI API when available
-        // This is a placeholder structure
+    public void openShop(Player player) {
+        UUID uuid = player.getComponent(PlayerRef.class).getUuid();
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(uuid);
         
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(getPlayerUUID(player));
         if (playerData == null) {
-            sendMessage(player, "§cError loading player data!");
+            player.sendMessage(Message.raw("§cError loading player data!"));
             return;
         }
         
-        // Create GUI inventory
-        // TODO: GUI inventory = createInventory("§6§lGenerator Shop", GUI_SIZE);
+        // TODO: Implement with Hytale PageManager API
+        // 
+        // Open custom shop page:
+        // player.getPageManager().openCustomPage(PageId.of(SHOP_PAGE_ID));
+        // 
+        // The shop_gui.ui file should contain:
+        // - Grid of generator type buttons
+        // - Each button shows:
+        //   * Generator icon/sprite
+        //   * Display name
+        //   * Cost
+        //   * Locked/Unlocked status
+        //   * Production rate preview
+        // 
+        // Button click handler:
+        // - Check if player can afford
+        // - Check prestige requirement
+        // - Purchase generator
+        // - Give generator item to player
         
-        // Add generator items to GUI
-        int slot = 10;
-        for (GeneratorType type : GeneratorType.values()) {
-            // Check if player has unlocked this tier
-            if (!canPurchase(playerData, type)) {
-                continue;
-            }
-            
-            // Create generator item
-            // TODO: Create item with proper material and meta
-            addGeneratorItem(null, slot, type, playerData);
-            
-            slot++;
-            if (slot == 17) slot = 19; // Skip to next row
-            if (slot == 26) slot = 28;
-            if (slot == 35) slot = 37;
-        }
-        
-        // Add info item
-        addInfoItem(null, 4, playerData);
-        
-        // Add close button
-        addCloseButton(null, 49);
-        
-        // Open GUI for player
-        // TODO: player.openInventory(inventory);
+        // Temporary fallback: Send text-based shop
+        sendTextBasedShop(player, playerData);
     }
     
     /**
-     * Create generator item for shop
+     * Handle generator purchase (called from UI button click)
      */
-    private void addGeneratorItem(Object inventory, int slot, GeneratorType type, PlayerData playerData) {
-        List<String> lore = new ArrayList<>();
+    public void handlePurchase(Player player, GeneratorType type) {
+        UUID uuid = player.getComponent(PlayerRef.class).getUuid();
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(uuid);
         
-        // Generator info
-        lore.add("");
-        lore.add("§7Tier: §e" + type.getTier());
-        lore.add("§7Production: §a" + NumberFormatter.format(type.getBaseProduction()) + " Essence/s");
-        lore.add("");
-        
-        // Cost
-        BigDecimal cost = type.getCost();
-        boolean canAfford = playerData.hasEssence(cost);
-        String costColor = canAfford ? "§a" : "§c";
-        lore.add("§7Cost: " + costColor + NumberFormatter.format(cost) + " Essence");
-        lore.add("");
-        
-        // Requirements
-        int requiredPrestige = type.getRequiredPrestige();
-        if (requiredPrestige > 0) {
-            boolean meetsRequirement = playerData.getPrestigeLevel() >= requiredPrestige;
-            String reqColor = meetsRequirement ? "§a" : "§c";
-            lore.add("§7Required Prestige: " + reqColor + requiredPrestige);
-            lore.add("");
-        }
-        
-        // Action
-        if (canAfford && playerData.getPrestigeLevel() >= requiredPrestige) {
-            lore.add("§e§l» Click to purchase «");
-        } else {
-            lore.add("§c§l✘ Cannot purchase");
-        }
-        
-        // TODO: Create item and add to inventory
-        // ItemStack item = new ItemStack(type.getMaterial());
-        // ItemMeta meta = item.getItemMeta();
-        // meta.setDisplayName("§6" + type.getDisplayName());
-        // meta.setLore(lore);
-        // item.setItemMeta(meta);
-        // inventory.setItem(slot, item);
-    }
-    
-    /**
-     * Add player info item
-     */
-    private void addInfoItem(Object inventory, int slot, PlayerData playerData) {
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.add("§7Balance: §a" + NumberFormatter.format(playerData.getEssence()) + " Essence");
-        lore.add("§7Gems: §b" + NumberFormatter.formatLong(playerData.getGems()));
-        lore.add("§7Crystals: §d" + playerData.getCrystals());
-        lore.add("");
-        lore.add("§7Prestige: §6" + playerData.getPrestigeLevel());
-        lore.add("§7Ascension: §5" + playerData.getAscensionLevel());
-        lore.add("§7Rebirth: §c" + playerData.getRebirthCount());
-        lore.add("");
-        lore.add("§7Multiplier: §e" + String.format("%.2f", playerData.calculateTotalMultiplier()) + "x");
-        
-        // TODO: Create info item (player head or info block)
-        // ItemStack item = new ItemStack(Material.PLAYER_HEAD);
-        // meta.setDisplayName("§e§l" + playerData.getUsername() + "'s Stats");
-        // meta.setLore(lore);
-    }
-    
-    /**
-     * Add close button
-     */
-    private void addCloseButton(Object inventory, int slot) {
-        // TODO: Create close button item
-        // ItemStack item = new ItemStack(Material.BARRIER);
-        // meta.setDisplayName("§c§lClose");
-    }
-    
-    /**
-     * Handle shop click
-     */
-    public void handleClick(Object player, int slot, Object item) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(getPlayerUUID(player));
-        if (playerData == null) return;
-        
-        // Get clicked generator type
-        GeneratorType type = getGeneratorTypeFromSlot(slot);
-        if (type == null) return;
-        
-        // Check if player can purchase
-        if (!canPurchase(playerData, type)) {
-            sendMessage(player, "§cYou cannot purchase this generator!");
-            playSound(player, "ERROR");
+        if (playerData == null) {
             return;
         }
         
+        // Check prestige requirement
+        if (playerData.getPrestigeLevel() < type.getRequiredPrestige()) {
+            player.sendMessage(Message.raw("§cRequires Prestige " + type.getRequiredPrestige() + "!"));
+            // TODO: Play error sound with Hytale Audio API
+            return;
+        }
+        
+        // Check cost
         BigDecimal cost = type.getCost();
         if (!playerData.hasEssence(cost)) {
-            sendMessage(player, "§cInsufficient Essence! Need " + NumberFormatter.format(cost));
-            playSound(player, "ERROR");
+            player.sendMessage(Message.raw("§cInsufficient Essence!"));
+            player.sendMessage(Message.raw("§7Need: §a" + NumberFormatter.format(cost)));
+            player.sendMessage(Message.raw("§7Have: §c" + NumberFormatter.format(playerData.getEssence())));
+            // TODO: Play error sound
             return;
         }
         
-        // Purchase generator
+        // Check generator slots
+        int currentGenerators = plugin.getGeneratorManager().getPlayerGeneratorCount(uuid);
+        if (currentGenerators >= playerData.getGeneratorSlots()) {
+            player.sendMessage(Message.raw("§cNo generator slots available!"));
+            player.sendMessage(Message.raw("§7Upgrade with §e/island slots"));
+            // TODO: Play error sound
+            return;
+        }
+        
+        // Process purchase
         playerData.removeEssence(cost);
         playerData.incrementGeneratorsPurchased();
+        plugin.getPlayerDataManager().savePlayerData(playerData);
         
-        // TODO: Give generator item to player
-        // giveGeneratorItem(player, type);
+        // TODO: Give generator item to player with Hytale Inventory API
+        // ItemStack generatorItem = createGeneratorItem(type);
+        // player.getInventory().addItemStack(generatorItem);
         
-        sendMessage(player, "§a§lPurchased! §7" + type.getDisplayName() + " for " + NumberFormatter.format(cost) + " Essence");
-        playSound(player, "SUCCESS");
+        // Success feedback
+        player.sendMessage(Message.raw("§a§l✓ Purchased! §7" + type.getDisplayName()));
+        player.sendMessage(Message.raw("§7Place it on your island to start producing!"));
+        
+        // TODO: Play success sound
+        // TODO: Particle effect
         
         // Refresh GUI
         openShop(player);
     }
     
     /**
-     * Check if player can purchase generator
+     * Temporary text-based shop (until UI is implemented)
      */
-    private boolean canPurchase(PlayerData playerData, GeneratorType type) {
-        // Check prestige requirement
-        if (playerData.getPrestigeLevel() < type.getRequiredPrestige()) {
-            return false;
-        }
+    private void sendTextBasedShop(Player player, PlayerData playerData) {
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§6§l─────────────────────────────"));
+        player.sendMessage(Message.raw("§6§l       Generator Shop"));
+        player.sendMessage(Message.raw("§7Your Balance: §a" + NumberFormatter.format(playerData.getEssence())));
+        player.sendMessage(Message.raw(""));
         
-        // Check ascension requirement
-        if (playerData.getAscensionLevel() < type.getRequiredAscension()) {
-            return false;
-        }
-        
-        return true;
-    }
-    
-    /**
-     * Get generator type from slot
-     */
-    private GeneratorType getGeneratorTypeFromSlot(int slot) {
-        // Map slots to generator types
-        int[] validSlots = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31};
-        
-        int index = -1;
-        for (int i = 0; i < validSlots.length; i++) {
-            if (validSlots[i] == slot) {
-                index = i;
-                break;
+        for (GeneratorType type : GeneratorType.values()) {
+            boolean locked = playerData.getPrestigeLevel() < type.getRequiredPrestige();
+            String status = locked ? "§c§l✗ LOCKED" : "§a§l✓";
+            
+            player.sendMessage(Message.raw(
+                status + " " + type.getDisplayName() + " §7- " + 
+                "§a" + NumberFormatter.format(type.getCost()) + " Essence"
+            ));
+            
+            if (locked) {
+                player.sendMessage(Message.raw("§8   Requires Prestige " + type.getRequiredPrestige()));
+            } else {
+                player.sendMessage(Message.raw("§8   Production: " + NumberFormatter.format(type.getBaseProduction()) + " Essence/s"));
             }
         }
         
-        if (index == -1 || index >= GeneratorType.values().length) {
-            return null;
-        }
-        
-        return GeneratorType.values()[index];
-    }
-    
-    // Utility methods (TODO: Implement with Hytale API)
-    
-    private Object getPlayerUUID(Object player) {
-        // TODO: return player.getUUID();
-        return null;
-    }
-    
-    private void sendMessage(Object player, String message) {
-        // TODO: player.sendMessage(message);
-        plugin.getLogger().info("[GUI] " + message);
-    }
-    
-    private void playSound(Object player, String sound) {
-        // TODO: player.playSound(sound);
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§eUse /gen buy <type> to purchase"));
+        player.sendMessage(Message.raw("§6§l─────────────────────────────"));
+        player.sendMessage(Message.raw(""));
     }
 }
