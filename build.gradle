@@ -1,0 +1,109 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+group = 'de.ageofflair'
+version = '1.0.0-ALPHA'
+
+repositories {
+    mavenCentral()
+    
+    // Hytale API Repository (placeholder - replace when available)
+    // maven { url 'https://repo.hytale.com/releases' }
+}
+
+dependencies {
+    // Hytale Plugin API (placeholder - replace when available)
+    // compileOnly 'com.hytale:plugin-api:1.0.0'
+    
+    // Database Connection Pool
+    implementation 'com.zaxxer:HikariCP:5.1.0'
+    
+    // PostgreSQL Driver
+    implementation 'org.postgresql:postgresql:42.7.1'
+    
+    // MySQL Driver (alternative)
+    implementation 'com.mysql:mysql-connector-j:8.3.0'
+    
+    // JSON Handling
+    implementation 'com.google.code.gson:gson:2.10.1'
+    
+    // Big Number Math
+    implementation 'ch.obermuhlner:big-math:2.3.2'
+    
+    // Lombok for cleaner code
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+    
+    // SLF4J Logging
+    implementation 'org.slf4j:slf4j-api:2.0.11'
+    implementation 'ch.qos.logback:logback-classic:1.4.14'
+    
+    // Testing
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
+    testImplementation 'org.mockito:mockito-core:5.8.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.8.0'
+    testImplementation 'com.h2database:h2:2.2.224'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-parameters'
+}
+
+shadowJar {
+    archiveClassifier.set('')
+    archiveFileName.set("Hycremental-${version}.jar")
+    
+    // Relocate dependencies to avoid conflicts
+    relocate 'com.zaxxer.hikari', 'de.ageofflair.hycremental.libs.hikari'
+    relocate 'com.google.gson', 'de.ageofflair.hycremental.libs.gson'
+    relocate 'ch.obermuhlner.math', 'de.ageofflair.hycremental.libs.bigmath'
+    relocate 'org.slf4j', 'de.ageofflair.hycremental.libs.slf4j'
+    relocate 'ch.qos.logback', 'de.ageofflair.hycremental.libs.logback'
+    
+    // Exclude unnecessary files
+    exclude 'META-INF/*.SF'
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.RSA'
+    
+    minimize()
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+    }
+}
+
+// Custom task to copy built plugin to test server
+task copyToServer(type: Copy, dependsOn: shadowJar) {
+    from shadowJar.archiveFile
+    into "${project.projectDir}/test-server/plugins"
+}
+
+// Generate sources jar
+task sourcesJar(type: Jar, dependsOn: classes) {
+    archiveClassifier.set('sources')
+    from sourceSets.main.allSource
+}
+
+// Generate javadoc jar
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    archiveClassifier.set('javadoc')
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+}
