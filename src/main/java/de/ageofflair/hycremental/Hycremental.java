@@ -11,6 +11,7 @@ import de.ageofflair.hycremental.core.EconomyManager;
 import de.ageofflair.hycremental.core.GeneratorManager;
 import de.ageofflair.hycremental.core.IslandManager;
 import de.ageofflair.hycremental.core.PrestigeManager;
+import de.ageofflair.hycremental.gui.*;
 import de.ageofflair.hycremental.listeners.*;
 import de.ageofflair.hycremental.utils.ConfigManager;
 
@@ -20,20 +21,12 @@ import java.util.logging.Level;
 /**
  * Hycremental - Incremental/Idle game plugin for Hytale
  * 
- * A complex idle game featuring:
- * - 12-tier generator system with quality and enchantments
- * - Triple currency economy (Essence, Gems, Crystals)
- * - Prestige/Ascension/Rebirth progression systems
- * - Player islands with upgradeable plots
- * - Block mining for passive income
- * 
  * @author Kielian (NadoHimself)
  * @version 1.0.0-ALPHA
  * @since 2026-02-03
  */
 public class Hycremental extends JavaPlugin {
     
-    // Plugin instance
     private static Hycremental instance;
     
     // Core managers
@@ -45,13 +38,16 @@ public class Hycremental extends JavaPlugin {
     private PrestigeManager prestigeManager;
     private ConfigManager configManager;
     
+    // GUI managers
+    private ShopGUI shopGUI;
+    private PrestigeGUI prestigeGUI;
+    private StatsGUI statsGUI;
+    private UpgradeGUI upgradeGUI;
+    
     public Hycremental(JavaPluginInit init) {
         super(init);
     }
     
-    /**
-     * Setup phase - Register components, commands, etc.
-     */
     @Override
     public void setup() {
         instance = this;
@@ -61,26 +57,19 @@ public class Hycremental extends JavaPlugin {
         getLogger().info("   by NadoHimself (Kielian)");
         getLogger().info("====================================");
         
-        // Initialize configuration
         getLogger().info("Loading configuration...");
         configManager = new ConfigManager(this);
         configManager.loadConfig();
         
-        // Register commands
         getLogger().info("Registering commands...");
         registerCommands();
         
-        // Register events
         getLogger().info("Registering event listeners...");
         registerEvents();
     }
     
-    /**
-     * Start phase - Called when server is ready
-     */
     @Override
     public void start() {
-        // Initialize database
         getLogger().info("Connecting to database...");
         databaseManager = new DatabaseManager();
         if (!databaseManager.connect()) {
@@ -89,7 +78,6 @@ public class Hycremental extends JavaPlugin {
         }
         databaseManager.initializeTables();
         
-        // Initialize managers
         getLogger().info("Initializing managers...");
         playerDataManager = new PlayerDataManager(this);
         playerDataManager.initialize();
@@ -98,7 +86,12 @@ public class Hycremental extends JavaPlugin {
         economyManager = new EconomyManager(this);
         prestigeManager = new PrestigeManager(this);
         
-        // Start background tasks
+        getLogger().info("Initializing GUIs...");
+        shopGUI = new ShopGUI(this);
+        prestigeGUI = new PrestigeGUI(this);
+        statsGUI = new StatsGUI(this);
+        upgradeGUI = new UpgradeGUI(this);
+        
         getLogger().info("Starting background tasks...");
         startBackgroundTasks();
         
@@ -106,26 +99,20 @@ public class Hycremental extends JavaPlugin {
         getLogger().info("====================================");
     }
     
-    /**
-     * Shutdown phase - Called when plugin is unloaded
-     */
     @Override
     public void shutdown() {
         getLogger().info("Shutting down Hycremental...");
         
-        // Save all data
         if (playerDataManager != null) {
             getLogger().info("Saving player data...");
             playerDataManager.shutdown();
         }
         
-        // Stop generators
         if (generatorManager != null) {
             getLogger().info("Stopping generators...");
             generatorManager.stopAllGenerators();
         }
         
-        // Close database
         if (databaseManager != null) {
             getLogger().info("Closing database connection...");
             databaseManager.disconnect();
@@ -134,9 +121,6 @@ public class Hycremental extends JavaPlugin {
         getLogger().info("Hycremental has been disabled.");
     }
     
-    /**
-     * Register all commands
-     */
     private void registerCommands() {
         getCommandRegistry().registerCommand(new EssenceCommand(this));
         getCommandRegistry().registerCommand(new IslandCommand(this));
@@ -145,9 +129,6 @@ public class Hycremental extends JavaPlugin {
         getCommandRegistry().registerCommand(new PrestigeCommand(this));
     }
     
-    /**
-     * Register all event listeners
-     */
     private void registerEvents() {
         PlayerJoinListener joinListener = new PlayerJoinListener(this);
         BlockBreakListener breakListener = new BlockBreakListener(this);
@@ -160,11 +141,7 @@ public class Hycremental extends JavaPlugin {
         getEventRegistry().register(com.hypixel.hytale.server.core.event.events.player.PlayerInteractEvent.class, interactListener::onInteract);
     }
     
-    /**
-     * Start background tasks using HytaleServer.SCHEDULED_EXECUTOR
-     */
     private void startBackgroundTasks() {
-        // Auto-save task - every 5 minutes
         HytaleServer.SCHEDULED_EXECUTOR.scheduleAtFixedRate(() -> {
             try {
                 getLogger().info("Auto-saving player data...");
@@ -176,7 +153,6 @@ public class Hycremental extends JavaPlugin {
             }
         }, 300, 300, TimeUnit.SECONDS);
         
-        // Generator production task - every second
         HytaleServer.SCHEDULED_EXECUTOR.scheduleAtFixedRate(() -> {
             try {
                 if (generatorManager != null) {
@@ -187,11 +163,9 @@ public class Hycremental extends JavaPlugin {
             }
         }, 1, 1, TimeUnit.SECONDS);
         
-        // Leaderboard update task - every hour
         HytaleServer.SCHEDULED_EXECUTOR.scheduleAtFixedRate(() -> {
             try {
                 getLogger().info("Updating leaderboards...");
-                // TODO: Update leaderboards
             } catch (Exception e) {
                 getLogger().severe("Error updating leaderboards: " + e.getMessage());
             }
@@ -230,5 +204,21 @@ public class Hycremental extends JavaPlugin {
     
     public ConfigManager getConfigManager() {
         return configManager;
+    }
+    
+    public ShopGUI getShopGUI() {
+        return shopGUI;
+    }
+    
+    public PrestigeGUI getPrestigeGUI() {
+        return prestigeGUI;
+    }
+    
+    public StatsGUI getStatsGUI() {
+        return statsGUI;
+    }
+    
+    public UpgradeGUI getUpgradeGUI() {
+        return upgradeGUI;
     }
 }
