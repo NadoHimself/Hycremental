@@ -1,5 +1,12 @@
 package de.ageofflair.hycremental.commands;
 
+import com.hypixel.hytale.server.core.command.system.basecommands.AbstractAsyncCommand;
+import com.hypixel.hytale.server.core.command.system.CommandContext;
+import com.hypixel.hytale.server.core.command.system.CommandDescriptor;
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+
 import de.ageofflair.hycremental.Hycremental;
 import de.ageofflair.hycremental.data.PlayerData;
 import de.ageofflair.hycremental.gui.PrestigeGUI;
@@ -24,7 +31,7 @@ import java.util.UUID;
  * @author Kielian (NadoHimself)
  * @version 1.0.0-ALPHA
  */
-public class PrestigeCommand {
+public class PrestigeCommand extends AbstractAsyncCommand {
     
     private final Hycremental plugin;
     private final PrestigeGUI prestigeGUI;
@@ -37,13 +44,28 @@ public class PrestigeCommand {
         this.prestigeGUI = new PrestigeGUI(plugin);
     }
     
-    /**
-     * Execute prestige command
-     */
-    public void executePrestige(Object player, String[] args) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(getPlayerUUID(player));
+    @Override
+    public CommandDescriptor buildDescriptor() {
+        return CommandDescriptor.builder()
+            .name("prestige")
+            .description("Prestige to gain permanent bonuses")
+            .build();
+    }
+    
+    @Override
+    public void run(CommandContext context) {
+        if (!context.sender().isPlayer()) {
+            context.sender().sendMessage(Message.raw("§cOnly players can use this command!"));
+            return;
+        }
+        
+        Player player = context.sender().asPlayer();
+        UUID uuid = player.getComponent(PlayerRef.class).getUuid();
+        String[] args = context.args();
+        
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(uuid);
         if (playerData == null) {
-            sendMessage(player, "§cError loading player data!");
+            player.sendMessage(Message.raw("§cError loading player data!"));
             return;
         }
         
@@ -65,96 +87,24 @@ public class PrestigeCommand {
                 break;
                 
             case "cancel":
-                cancelConfirmation(player);
+                cancelConfirmation(player, uuid);
                 break;
                 
             default:
-                sendMessage(player, "§cUsage: /prestige [confirm|info|cancel]");
-        }
-    }
-    
-    /**
-     * Execute ascension command
-     */
-    public void executeAscension(Object player, String[] args) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(getPlayerUUID(player));
-        if (playerData == null) {
-            sendMessage(player, "§cError loading player data!");
-            return;
-        }
-        
-        // No arguments - show info
-        if (args.length == 0) {
-            showAscensionInfo(player, playerData);
-            return;
-        }
-        
-        String subCommand = args[0].toLowerCase();
-        
-        switch (subCommand) {
-            case "confirm":
-                confirmAscension(player, playerData);
-                break;
-                
-            case "info":
-                showAscensionInfo(player, playerData);
-                break;
-                
-            case "cancel":
-                cancelConfirmation(player);
-                break;
-                
-            default:
-                sendMessage(player, "§cUsage: /ascend [confirm|info|cancel]");
-        }
-    }
-    
-    /**
-     * Execute rebirth command
-     */
-    public void executeRebirth(Object player, String[] args) {
-        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(getPlayerUUID(player));
-        if (playerData == null) {
-            sendMessage(player, "§cError loading player data!");
-            return;
-        }
-        
-        // No arguments - show warning
-        if (args.length == 0) {
-            showRebirthWarning(player, playerData);
-            return;
-        }
-        
-        String subCommand = args[0].toLowerCase();
-        
-        switch (subCommand) {
-            case "confirm":
-                confirmRebirth(player, playerData);
-                break;
-                
-            case "info":
-                showRebirthInfo(player, playerData);
-                break;
-                
-            case "cancel":
-                cancelConfirmation(player);
-                break;
-                
-            default:
-                sendMessage(player, "§cUsage: /rebirth [confirm|info|cancel]");
+                player.sendMessage(Message.raw("§cUsage: /prestige [confirm|info|cancel]"));
         }
     }
     
     /**
      * Confirm prestige
      */
-    private void confirmPrestige(Object player, PlayerData playerData) {
+    private void confirmPrestige(Player player, PlayerData playerData) {
         // Calculate cost
         BigDecimal cost = calculatePrestigeCost(playerData.getPrestigeLevel());
         
         // Check requirements
         if (!playerData.hasEssence(cost)) {
-            sendMessage(player, "§cInsufficient Essence! Need: " + NumberFormatter.format(cost));
+            player.sendMessage(Message.raw("§cInsufficient Essence! Need: " + NumberFormatter.format(cost)));
             return;
         }
         
@@ -167,194 +117,48 @@ public class PrestigeCommand {
         // Remove generators (keep Tier 1)
         plugin.getGeneratorManager().resetPlayerGenerators(playerData.getUuid(), false);
         
-        // Reset island upgrades
-        // TODO: Reset island size back to default
-        
         // Announce
-        sendMessage(player, "§7§m─────────────────────────────");
-        sendMessage(player, "§6§l☆ PRESTIGE! ☆");
-        sendMessage(player, "");
-        sendMessage(player, "§7You have prestiged from §6" + oldPrestige + " §7to §6" + playerData.getPrestigeLevel() + "§7!");
-        sendMessage(player, "");
-        sendMessage(player, "§7New Multiplier: §e" + String.format("%.2f", playerData.calculateTotalMultiplier()) + "x");
-        sendMessage(player, "§7§m─────────────────────────────");
+        player.sendMessage(Message.raw("§7§m─────────────────────────────"));
+        player.sendMessage(Message.raw("§6§l☆ PRESTIGE! ☆"));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7You have prestiged from §6" + oldPrestige + " §7to §6" + playerData.getPrestigeLevel() + "§7!"));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7New Multiplier: §e" + String.format("%.2f", playerData.calculateTotalMultiplier()) + "x"));
+        player.sendMessage(Message.raw("§7§m─────────────────────────────"));
         
-        // Broadcast to server
-        broadcastMessage("§6§l" + playerData.getUsername() + " §7has prestiged to §6Prestige " + playerData.getPrestigeLevel() + "§7!");
-        
-        playSound(player, "LEVELUP");
-    }
-    
-    /**
-     * Confirm ascension
-     */
-    private void confirmAscension(Object player, PlayerData playerData) {
-        int requiredPrestige = 50 + (playerData.getAscensionLevel() * 50);
-        
-        // Check requirements
-        if (playerData.getPrestigeLevel() < requiredPrestige) {
-            sendMessage(player, "§cYou need Prestige " + requiredPrestige + " to ascend!");
-            return;
-        }
-        
-        // Perform ascension
-        int oldAscension = playerData.getAscensionLevel();
-        
-        // Reset everything
-        playerData.ascend();
-        playerData.setPrestigeLevel(0);
-        playerData.setEssence(BigDecimal.ZERO);
-        
-        // Remove all generators
-        plugin.getGeneratorManager().resetPlayerGenerators(playerData.getUuid(), true);
-        
-        // Announce
-        sendMessage(player, "§7§m─────────────────────────────");
-        sendMessage(player, "§5§l★ ASCENSION! ★");
-        sendMessage(player, "");
-        sendMessage(player, "§7You have ascended from §5" + oldAscension + " §7to §5" + playerData.getAscensionLevel() + "§7!");
-        sendMessage(player, "");
-        sendMessage(player, "§7New Multiplier: §d" + String.format("%.2f", playerData.calculateTotalMultiplier()) + "x");
-        sendMessage(player, "§7You gained §d1 Ascension Point§7!");
-        sendMessage(player, "§7§m─────────────────────────────");
-        
-        // Broadcast to server
-        broadcastMessage("§5§l" + playerData.getUsername() + " §7has ascended to §5Ascension " + playerData.getAscensionLevel() + "§7!");
-        
-        playSound(player, "WITHER_SPAWN");
-    }
-    
-    /**
-     * Confirm rebirth
-     */
-    private void confirmRebirth(Object player, PlayerData playerData) {
-        // Check requirements
-        if (playerData.getAscensionLevel() < 10) {
-            sendMessage(player, "§cYou need Ascension 10 to rebirth!");
-            return;
-        }
-        
-        // Perform rebirth
-        int oldRebirth = playerData.getRebirthCount();
-        
-        // Reset EVERYTHING
-        playerData.rebirth();
-        
-        // Remove all generators
-        plugin.getGeneratorManager().resetPlayerGenerators(playerData.getUuid(), true);
-        
-        // Reset island
-        playerData.setIslandSize(20);
-        playerData.setGeneratorSlots(10);
-        
-        // Announce
-        sendMessage(player, "§7§m─────────────────────────────");
-        sendMessage(player, "§c§l✦ REBIRTH! ✦");
-        sendMessage(player, "");
-        sendMessage(player, "§7You have been reborn! §c" + oldRebirth + " §7→ §c" + playerData.getRebirthCount());
-        sendMessage(player, "");
-        sendMessage(player, "§7New Multiplier: §c" + String.format("%.2f", playerData.calculateTotalMultiplier()) + "x");
-        sendMessage(player, "§7All Essence gains are now §c2x §7permanent!");
-        sendMessage(player, "§7§m─────────────────────────────");
-        
-        // Broadcast to entire server
-        broadcastMessage("§c§l✦ " + playerData.getUsername() + " HAS BEEN REBORN! ✦");
-        broadcastMessage("§cRebirth Count: " + playerData.getRebirthCount());
-        
-        playSound(player, "DRAGON_DEATH");
+        // TODO: Broadcast to server with Hytale Server API
+        // plugin.getServer().broadcast(Message.raw("§6§l" + playerData.getUsername() + " §7has prestiged to §6Prestige " + playerData.getPrestigeLevel() + "§7!"));
     }
     
     /**
      * Show prestige info
      */
-    private void showPrestigeInfo(Object player, PlayerData playerData) {
+    private void showPrestigeInfo(Player player, PlayerData playerData) {
         BigDecimal cost = calculatePrestigeCost(playerData.getPrestigeLevel());
         
-        sendMessage(player, "§7§m─────────────────────────────");
-        sendMessage(player, "§6§lPrestige Information");
-        sendMessage(player, "");
-        sendMessage(player, "§7Current Prestige: §6" + playerData.getPrestigeLevel());
-        sendMessage(player, "§7Next Prestige: §6" + (playerData.getPrestigeLevel() + 1));
-        sendMessage(player, "");
-        sendMessage(player, "§7Required Essence: §a" + NumberFormatter.format(cost));
-        sendMessage(player, "§7Your Essence: §a" + NumberFormatter.format(playerData.getEssence()));
-        sendMessage(player, "");
-        sendMessage(player, "§7Reward: §e+10% Global Multiplier");
-        sendMessage(player, "§7Current Multiplier: §e" + String.format("%.2f", playerData.calculateTotalMultiplier()) + "x");
-        sendMessage(player, "§7§m─────────────────────────────");
-        sendMessage(player, "§eType /prestige confirm to prestige!");
-    }
-    
-    /**
-     * Show ascension info
-     */
-    private void showAscensionInfo(Object player, PlayerData playerData) {
-        int requiredPrestige = 50 + (playerData.getAscensionLevel() * 50);
-        boolean canAscend = playerData.getPrestigeLevel() >= requiredPrestige;
-        
-        sendMessage(player, "§7§m─────────────────────────────");
-        sendMessage(player, "§5§lAscension Information");
-        sendMessage(player, "");
-        sendMessage(player, "§7Current Ascension: §5" + playerData.getAscensionLevel());
-        sendMessage(player, "§7Next Ascension: §5" + (playerData.getAscensionLevel() + 1));
-        sendMessage(player, "");
-        sendMessage(player, "§7Required Prestige: " + (canAscend ? "§a" : "§c") + requiredPrestige);
-        sendMessage(player, "§7Your Prestige: " + (canAscend ? "§a" : "§c") + playerData.getPrestigeLevel());
-        sendMessage(player, "");
-        sendMessage(player, "§7Reward: §d+50% Permanent Multiplier");
-        sendMessage(player, "§7Current Multiplier: §d" + String.format("%.2f", playerData.calculateTotalMultiplier()) + "x");
-        sendMessage(player, "§7§m─────────────────────────────");
-        
-        if (canAscend) {
-            sendMessage(player, "§dType /ascend confirm to ascend!");
-        } else {
-            sendMessage(player, "§cYou do not meet the requirements yet!");
-        }
-    }
-    
-    /**
-     * Show rebirth warning
-     */
-    private void showRebirthWarning(Object player, PlayerData playerData) {
-        boolean canRebirth = playerData.getAscensionLevel() >= 10;
-        
-        sendMessage(player, "§7§m─────────────────────────────");
-        sendMessage(player, "§c§lREBIRTH WARNING");
-        sendMessage(player, "");
-        sendMessage(player, "§c§lTHIS WILL RESET EVERYTHING!");
-        sendMessage(player, "");
-        sendMessage(player, "§7Current Rebirth: §c" + playerData.getRebirthCount());
-        sendMessage(player, "§7Next Rebirth: §c" + (playerData.getRebirthCount() + 1));
-        sendMessage(player, "");
-        sendMessage(player, "§7Required Ascension: " + (canRebirth ? "§a" : "§c") + "10");
-        sendMessage(player, "§7Your Ascension: " + (canRebirth ? "§a" : "§c") + playerData.getAscensionLevel());
-        sendMessage(player, "");
-        sendMessage(player, "§7Reward: §c2x ALL Essence (Permanent)");
-        sendMessage(player, "§7§m─────────────────────────────");
-        
-        if (canRebirth) {
-            sendMessage(player, "§c§lType /rebirth confirm if you're ABSOLUTELY SURE!");
-        } else {
-            sendMessage(player, "§cYou do not meet the requirements yet!");
-        }
-    }
-    
-    /**
-     * Show rebirth info
-     */
-    private void showRebirthInfo(Object player, PlayerData playerData) {
-        showRebirthWarning(player, playerData);
+        player.sendMessage(Message.raw("§7§m─────────────────────────────"));
+        player.sendMessage(Message.raw("§6§lPrestige Information"));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7Current Prestige: §6" + playerData.getPrestigeLevel()));
+        player.sendMessage(Message.raw("§7Next Prestige: §6" + (playerData.getPrestigeLevel() + 1)));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7Required Essence: §a" + NumberFormatter.format(cost)));
+        player.sendMessage(Message.raw("§7Your Essence: §a" + NumberFormatter.format(playerData.getEssence())));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7Reward: §e+10% Global Multiplier"));
+        player.sendMessage(Message.raw("§7Current Multiplier: §e" + String.format("%.2f", playerData.calculateTotalMultiplier()) + "x"));
+        player.sendMessage(Message.raw("§7§m─────────────────────────────"));
+        player.sendMessage(Message.raw("§eType /prestige confirm to prestige!"));
     }
     
     /**
      * Cancel pending confirmation
      */
-    private void cancelConfirmation(Object player) {
-        UUID uuid = (UUID) getPlayerUUID(player);
+    private void cancelConfirmation(Player player, UUID uuid) {
         if (pendingConfirmations.remove(uuid) != null) {
-            sendMessage(player, "§aConfirmation cancelled.");
+            player.sendMessage(Message.raw("§aConfirmation cancelled."));
         } else {
-            sendMessage(player, "§cNo pending confirmation.");
+            player.sendMessage(Message.raw("§cNo pending confirmation."));
         }
     }
     
@@ -366,24 +170,190 @@ public class PrestigeCommand {
         double multiplier = Math.pow(1.5, currentPrestige);
         return BigDecimal.valueOf(baseCost * multiplier);
     }
+}
+
+/**
+ * Ascension Command
+ */
+class AscensionCommand extends AbstractAsyncCommand {
     
-    // Utility methods
+    private final Hycremental plugin;
+    private final PrestigeGUI prestigeGUI;
     
-    private Object getPlayerUUID(Object player) {
-        return null; // TODO
+    public AscensionCommand(Hycremental plugin) {
+        this.plugin = plugin;
+        this.prestigeGUI = new PrestigeGUI(plugin);
     }
     
-    private void sendMessage(Object player, String message) {
-        plugin.getLogger().info("[Command] " + message);
-        // TODO: player.sendMessage(message);
+    @Override
+    public CommandDescriptor buildDescriptor() {
+        return CommandDescriptor.builder()
+            .name("ascend")
+            .description("Ascend for massive permanent bonuses")
+            .aliases("ascension")
+            .build();
     }
     
-    private void broadcastMessage(String message) {
-        plugin.getLogger().info("[Broadcast] " + message);
-        // TODO: server.broadcastMessage(message);
+    @Override
+    public void run(CommandContext context) {
+        if (!context.sender().isPlayer()) {
+            context.sender().sendMessage(Message.raw("§cOnly players can use this command!"));
+            return;
+        }
+        
+        Player player = context.sender().asPlayer();
+        UUID uuid = player.getComponent(PlayerRef.class).getUuid();
+        String[] args = context.args();
+        
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(uuid);
+        if (playerData == null) {
+            player.sendMessage(Message.raw("§cError loading player data!"));
+            return;
+        }
+        
+        // No arguments - show info
+        if (args.length == 0) {
+            showAscensionInfo(player, playerData);
+            return;
+        }
+        
+        String subCommand = args[0].toLowerCase();
+        
+        if (subCommand.equals("confirm")) {
+            confirmAscension(player, playerData);
+        } else {
+            player.sendMessage(Message.raw("§cUsage: /ascend [confirm]"));
+        }
     }
     
-    private void playSound(Object player, String sound) {
-        // TODO: player.playSound(sound);
+    private void confirmAscension(Player player, PlayerData playerData) {
+        int requiredPrestige = 50 + (playerData.getAscensionLevel() * 50);
+        
+        if (playerData.getPrestigeLevel() < requiredPrestige) {
+            player.sendMessage(Message.raw("§cYou need Prestige " + requiredPrestige + " to ascend!"));
+            return;
+        }
+        
+        int oldAscension = playerData.getAscensionLevel();
+        
+        playerData.ascend();
+        playerData.setPrestigeLevel(0);
+        playerData.setEssence(BigDecimal.ZERO);
+        plugin.getGeneratorManager().resetPlayerGenerators(playerData.getUuid(), true);
+        
+        player.sendMessage(Message.raw("§7§m─────────────────────────────"));
+        player.sendMessage(Message.raw("§5§l★ ASCENSION! ★"));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7You have ascended from §5" + oldAscension + " §7to §5" + playerData.getAscensionLevel() + "§7!"));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7New Multiplier: §d" + String.format("%.2f", playerData.calculateTotalMultiplier()) + "x"));
+        player.sendMessage(Message.raw("§7§m─────────────────────────────"));
+    }
+    
+    private void showAscensionInfo(Player player, PlayerData playerData) {
+        int requiredPrestige = 50 + (playerData.getAscensionLevel() * 50);
+        boolean canAscend = playerData.getPrestigeLevel() >= requiredPrestige;
+        
+        player.sendMessage(Message.raw("§7§m─────────────────────────────"));
+        player.sendMessage(Message.raw("§5§lAscension Information"));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7Current Ascension: §5" + playerData.getAscensionLevel()));
+        player.sendMessage(Message.raw("§7Required Prestige: " + (canAscend ? "§a" : "§c") + requiredPrestige));
+        player.sendMessage(Message.raw("§7Your Prestige: " + (canAscend ? "§a" : "§c") + playerData.getPrestigeLevel()));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7Reward: §d+50% Permanent Multiplier"));
+        player.sendMessage(Message.raw("§7§m─────────────────────────────"));
+        
+        if (canAscend) {
+            player.sendMessage(Message.raw("§dType /ascend confirm to ascend!"));
+        }
+    }
+}
+
+/**
+ * Rebirth Command
+ */
+class RebirthCommand extends AbstractAsyncCommand {
+    
+    private final Hycremental plugin;
+    
+    public RebirthCommand(Hycremental plugin) {
+        this.plugin = plugin;
+    }
+    
+    @Override
+    public CommandDescriptor buildDescriptor() {
+        return CommandDescriptor.builder()
+            .name("rebirth")
+            .description("Complete reset for game-breaking bonuses")
+            .build();
+    }
+    
+    @Override
+    public void run(CommandContext context) {
+        if (!context.sender().isPlayer()) {
+            context.sender().sendMessage(Message.raw("§cOnly players can use this command!"));
+            return;
+        }
+        
+        Player player = context.sender().asPlayer();
+        UUID uuid = player.getComponent(PlayerRef.class).getUuid();
+        String[] args = context.args();
+        
+        PlayerData playerData = plugin.getPlayerDataManager().getPlayerData(uuid);
+        if (playerData == null) {
+            player.sendMessage(Message.raw("§cError loading player data!"));
+            return;
+        }
+        
+        if (args.length == 0) {
+            showRebirthWarning(player, playerData);
+            return;
+        }
+        
+        if (args[0].equalsIgnoreCase("confirm")) {
+            confirmRebirth(player, playerData);
+        }
+    }
+    
+    private void confirmRebirth(Player player, PlayerData playerData) {
+        if (playerData.getAscensionLevel() < 10) {
+            player.sendMessage(Message.raw("§cYou need Ascension 10 to rebirth!"));
+            return;
+        }
+        
+        int oldRebirth = playerData.getRebirthCount();
+        
+        playerData.rebirth();
+        plugin.getGeneratorManager().resetPlayerGenerators(playerData.getUuid(), true);
+        playerData.setIslandSize(20);
+        playerData.setGeneratorSlots(10);
+        
+        player.sendMessage(Message.raw("§7§m─────────────────────────────"));
+        player.sendMessage(Message.raw("§c§l✦ REBIRTH! ✦"));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7You have been reborn! §c" + oldRebirth + " §7→ §c" + playerData.getRebirthCount()));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7New Multiplier: §c" + String.format("%.2f", playerData.calculateTotalMultiplier()) + "x"));
+        player.sendMessage(Message.raw("§7§m─────────────────────────────"));
+    }
+    
+    private void showRebirthWarning(Player player, PlayerData playerData) {
+        boolean canRebirth = playerData.getAscensionLevel() >= 10;
+        
+        player.sendMessage(Message.raw("§7§m─────────────────────────────"));
+        player.sendMessage(Message.raw("§c§lREBIRTH WARNING"));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§c§lTHIS WILL RESET EVERYTHING!"));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7Required Ascension: " + (canRebirth ? "§a" : "§c") + "10"));
+        player.sendMessage(Message.raw("§7Your Ascension: " + (canRebirth ? "§a" : "§c") + playerData.getAscensionLevel()));
+        player.sendMessage(Message.raw(""));
+        player.sendMessage(Message.raw("§7Reward: §c2x ALL Essence (Permanent)"));
+        player.sendMessage(Message.raw("§7§m─────────────────────────────"));
+        
+        if (canRebirth) {
+            player.sendMessage(Message.raw("§c§lType /rebirth confirm if you're ABSOLUTELY SURE!"));
+        }
     }
 }
