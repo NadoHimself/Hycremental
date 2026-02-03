@@ -17,8 +17,20 @@ jobs:
       with:
         lfs: true  # Enable Git LFS for HytaleServer.jar
     
-    - name: Checkout LFS objects
-      run: git lfs pull
+    - name: Setup Git LFS and pull objects
+      run: |
+        git lfs install
+        git lfs pull
+        echo "Git LFS objects pulled"
+        echo "Checking HytaleServer.jar size..."
+        ls -lh libs/HytaleServer.jar
+        if [ $(stat -c%s "libs/HytaleServer.jar") -lt 10000000 ]; then
+          echo "ERROR: HytaleServer.jar seems to be a Git LFS pointer, not the actual file!"
+          echo "File content:"
+          head -n 10 libs/HytaleServer.jar
+          exit 1
+        fi
+        echo "HytaleServer.jar looks good ($(stat -c%s 'libs/HytaleServer.jar') bytes)"
     
     - name: Set up JDK 21
       uses: actions/setup-java@v4
@@ -30,6 +42,11 @@ jobs:
       uses: gradle/actions/setup-gradle@v3
       with:
         gradle-version: '8.5'
+    
+    - name: Verify HytaleServer.jar is readable
+      run: |
+        echo "Verifying HytaleServer.jar can be read by Java..."
+        unzip -l libs/HytaleServer.jar | head -n 20
     
     - name: Build with Gradle
       run: gradle clean build shadowJar --no-daemon --info --stacktrace
