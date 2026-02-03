@@ -1,9 +1,8 @@
 package de.ageofflair.hycremental;
 
-import com.hypixel.hytale.server.plugin.JavaPlugin;
-import com.hypixel.hytale.server.core.event.PlayerReadyEvent;
-import com.hypixel.hytale.server.core.event.EventHandler;
-import com.hypixel.hytale.server.player.ServerPlayer;
+import com.hypixel.hytale.server.core.HytaleServer;
+import com.hypixel.hytale.server.core.plugin.JavaPlugin;
+import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 
 import de.ageofflair.hycremental.commands.*;
 import de.ageofflair.hycremental.data.DatabaseManager;
@@ -15,6 +14,7 @@ import de.ageofflair.hycremental.core.PrestigeManager;
 import de.ageofflair.hycremental.listeners.*;
 import de.ageofflair.hycremental.utils.ConfigManager;
 
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 /**
@@ -45,34 +45,52 @@ public class Hycremental extends JavaPlugin {
     private PrestigeManager prestigeManager;
     private ConfigManager configManager;
     
+    public Hycremental(JavaPluginInit init) {
+        super(init);
+    }
+    
     /**
-     * Plugin startup - Called when plugin is loaded
+     * Setup phase - Register components, commands, etc.
      */
     @Override
-    public void onEnable() {
+    public void setup() {
         instance = this;
         
-        getLogger().log(Level.INFO, "====================================");
-        getLogger().log(Level.INFO, "   Hycremental v1.0.0-ALPHA");
-        getLogger().log(Level.INFO, "   by NadoHimself (Kielian)");
-        getLogger().log(Level.INFO, "====================================");
+        getLogger().info("====================================");
+        getLogger().info("   Hycremental v1.0.0-ALPHA");
+        getLogger().info("   by NadoHimself (Kielian)");
+        getLogger().info("====================================");
         
         // Initialize configuration
-        getLogger().log(Level.INFO, "Loading configuration...");
+        getLogger().info("Loading configuration...");
         configManager = new ConfigManager(this);
         configManager.loadConfig();
         
+        // Register commands
+        getLogger().info("Registering commands...");
+        registerCommands();
+        
+        // Register events
+        getLogger().info("Registering event listeners...");
+        registerEvents();
+    }
+    
+    /**
+     * Start phase - Called when server is ready
+     */
+    @Override
+    public void start() {
         // Initialize database
-        getLogger().log(Level.INFO, "Connecting to database...");
+        getLogger().info("Connecting to database...");
         databaseManager = new DatabaseManager();
         if (!databaseManager.connect()) {
-            getLogger().log(Level.SEVERE, "Failed to connect to database! Plugin disabled.");
+            getLogger().severe("Failed to connect to database! Plugin disabled.");
             return;
         }
         databaseManager.initializeTables();
         
         // Initialize managers
-        getLogger().log(Level.INFO, "Initializing managers...");
+        getLogger().info("Initializing managers...");
         playerDataManager = new PlayerDataManager(this);
         playerDataManager.initialize();
         generatorManager = new GeneratorManager(this);
@@ -80,91 +98,104 @@ public class Hycremental extends JavaPlugin {
         economyManager = new EconomyManager(this);
         prestigeManager = new PrestigeManager(this);
         
-        // Register commands
-        getLogger().log(Level.INFO, "Registering commands...");
-        registerCommands();
-        
-        // Register events
-        getLogger().log(Level.INFO, "Registering event listeners...");
-        registerEvents();
-        
         // Start background tasks
-        getLogger().log(Level.INFO, "Starting background tasks...");
+        getLogger().info("Starting background tasks...");
         startBackgroundTasks();
         
-        getLogger().log(Level.INFO, "Hycremental has been enabled successfully!");
-        getLogger().log(Level.INFO, "====================================");
+        getLogger().info("Hycremental has been enabled successfully!");
+        getLogger().info("====================================");
     }
     
     /**
-     * Plugin shutdown - Called when plugin is unloaded
+     * Shutdown phase - Called when plugin is unloaded
      */
     @Override
-    public void onDisable() {
-        getLogger().log(Level.INFO, "Shutting down Hycremental...");
+    public void shutdown() {
+        getLogger().info("Shutting down Hycremental...");
         
         // Save all data
         if (playerDataManager != null) {
-            getLogger().log(Level.INFO, "Saving player data...");
+            getLogger().info("Saving player data...");
             playerDataManager.shutdown();
         }
         
         // Stop generators
         if (generatorManager != null) {
-            getLogger().log(Level.INFO, "Stopping generators...");
+            getLogger().info("Stopping generators...");
             generatorManager.stopAllGenerators();
         }
         
         // Close database
         if (databaseManager != null) {
-            getLogger().log(Level.INFO, "Closing database connection...");
+            getLogger().info("Closing database connection...");
             databaseManager.disconnect();
         }
         
-        getLogger().log(Level.INFO, "Hycremental has been disabled.");
+        getLogger().info("Hycremental has been disabled.");
     }
     
     /**
      * Register all commands
      */
     private void registerCommands() {
-        getCommandManager().register(new EssenceCommand(this));
-        getCommandManager().register(new IslandCommand(this));
-        getCommandManager().register(new ShopCommand(this));
-        getCommandManager().register(new GeneratorCommand(this));
-        getCommandManager().register(new PrestigeCommand(this));
+        getCommandRegistry().registerCommand(new EssenceCommand(this));
+        getCommandRegistry().registerCommand(new IslandCommand(this));
+        getCommandRegistry().registerCommand(new ShopCommand(this));
+        getCommandRegistry().registerCommand(new GeneratorCommand(this));
+        getCommandRegistry().registerCommand(new PrestigeCommand(this));
     }
     
     /**
      * Register all event listeners
      */
     private void registerEvents() {
-        getEventManager().register(new PlayerJoinListener(this));
-        getEventManager().register(new BlockBreakListener(this));
-        getEventManager().register(new GeneratorPlaceListener(this));
-        getEventManager().register(new GeneratorInteractListener(this));
+        PlayerJoinListener joinListener = new PlayerJoinListener(this);
+        BlockBreakListener breakListener = new BlockBreakListener(this);
+        GeneratorPlaceListener placeListener = new GeneratorPlaceListener(this);
+        GeneratorInteractListener interactListener = new GeneratorInteractListener(this);
+        
+        getEventRegistry().register(com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent.class, joinListener::onPlayerConnect);
+        getEventRegistry().register(com.hypixel.hytale.server.core.event.events.ecs.BreakBlockEvent.class, breakListener::onBlockBreak);
+        getEventRegistry().register(com.hypixel.hytale.server.core.event.events.ecs.PlaceBlockEvent.class, placeListener::onBlockPlace);
+        getEventRegistry().register(com.hypixel.hytale.server.core.event.events.player.PlayerInteractEvent.class, interactListener::onInteract);
     }
     
     /**
-     * Start background tasks using Hytale Scheduler
+     * Start background tasks using HytaleServer.SCHEDULED_EXECUTOR
      */
     private void startBackgroundTasks() {
-        // Auto-save task - every 5 minutes (6000 ticks)
-        getScheduler().runRepeating(() -> {
-            getLogger().log(Level.INFO, "Auto-saving player data...");
-            playerDataManager.saveAllPlayers();
-        }, 6000, 6000);
+        // Auto-save task - every 5 minutes
+        HytaleServer.SCHEDULED_EXECUTOR.scheduleAtFixedRate(() -> {
+            try {
+                getLogger().info("Auto-saving player data...");
+                if (playerDataManager != null) {
+                    playerDataManager.saveAllPlayers();
+                }
+            } catch (Exception e) {
+                getLogger().severe("Error during auto-save: " + e.getMessage());
+            }
+        }, 300, 300, TimeUnit.SECONDS);
         
-        // Generator production task - every second (20 ticks)
-        getScheduler().runRepeating(() -> {
-            generatorManager.processAllGenerators();
-        }, 20, 20);
+        // Generator production task - every second
+        HytaleServer.SCHEDULED_EXECUTOR.scheduleAtFixedRate(() -> {
+            try {
+                if (generatorManager != null) {
+                    generatorManager.processAllGenerators();
+                }
+            } catch (Exception e) {
+                getLogger().severe("Error processing generators: " + e.getMessage());
+            }
+        }, 1, 1, TimeUnit.SECONDS);
         
-        // Leaderboard update task - every hour (72000 ticks)
-        getScheduler().runRepeating(() -> {
-            getLogger().log(Level.INFO, "Updating leaderboards...");
-            // TODO: Update leaderboards
-        }, 72000, 72000);
+        // Leaderboard update task - every hour
+        HytaleServer.SCHEDULED_EXECUTOR.scheduleAtFixedRate(() -> {
+            try {
+                getLogger().info("Updating leaderboards...");
+                // TODO: Update leaderboards
+            } catch (Exception e) {
+                getLogger().severe("Error updating leaderboards: " + e.getMessage());
+            }
+        }, 3600, 3600, TimeUnit.SECONDS);
     }
     
     // Getters
