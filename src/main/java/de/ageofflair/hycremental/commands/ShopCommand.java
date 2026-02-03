@@ -30,9 +30,6 @@ public class ShopCommand implements Command {
         }
         
         Player player = (Player) sender;
-        
-        // TODO: Open shop GUI
-        player.sendMessage(Message.raw("§6§l=== Generator Shop ==="));
-        player.sendMessage(Message.raw("§7Shop UI coming soon!"));
+        plugin.getShopGUI().openShop(player);
     }
 }
