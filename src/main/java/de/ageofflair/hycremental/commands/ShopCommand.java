@@ -2,7 +2,7 @@ package de.ageofflair.hycremental.commands;
 
 import com.hypixel.hytale.server.core.command.Command;
 import com.hypixel.hytale.server.core.command.CommandSender;
-import com.hypixel.hytale.server.core.universe.message.Message;
+import com.hypixel.hytale.server.core.Message;
 
 import javax.annotation.Nonnull;
 
